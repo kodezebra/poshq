@@ -115,6 +115,33 @@ Currency: **UGX** — whole shillings only (no minor unit). VAT: **0% or 18%**, 
 2. `chore(release): pos v1 polish, tests and docs`
 3. `test(app): smoke-test the shipped binary through the accessibility bus`
 
+## M7 — Cash handling & change
+
+A till has to know how much cash it was handed and how much change it gave
+back. Everything else follows: the drawer total, the order history, and the
+proof that a sale was actually paid for in full.
+
+- [ ] `src/lib/payment.ts`: pure money helpers — `changeDue`, `shortfall`, `settle`,
+      `quickCash`, `CASH_NOTES`, `PaymentMethod`
+- [ ] `src/lib/db/schema.ts`: `orders.tendered` + `orders.change_given` (integer UGX)
+- [ ] Migration `0001_cash_handling.sql`, backfilling legacy cash orders, registered in `MIGRATIONS`
+- [ ] `db/orders.ts`: `createOrder()` settles the payment and refuses a sale that was not paid for;
+      `getCashSummary()` totals the cash in the drawer for the local day
+- [ ] `PaymentPad` in the cart footer: Cash/Card, tendered amount, exact + quick-note buttons,
+      live change readout, confirm blocked while the sale is short
+- [ ] Terminal shows the till total; the orders list and detail show tendered and change
+- [ ] Unit tests for the tender and change maths
+- [ ] Real-app smoke test covers cash → change → the persisted row
+
+**Commits:**
+1. `docs(plan): plan M7 cash handling and change`
+2. `feat(db): store tendered and change on orders`
+3. `feat(payment): tender, change and quick-cash helpers`
+4. `feat(checkout): settle the payment and total the till`
+5. `feat(terminal): payment pad for cash and card`
+6. `feat(orders): show tendered and change in the history`
+7. `test(app): cover cash and change in the real-app smoke test`
+
 ---
 
 ## Milestone gates
@@ -127,6 +154,7 @@ Currency: **UGX** — whole shillings only (no minor unit). VAT: **0% or 18%**, 
 | M4 | Full product lifecycle from the UI; invalid input blocked |
 | M5 | Order history is auditable; void never deletes silently |
 | M6 | Green checks, QA script passes, docs accurate |
+| M7 | A cash sale stores what was tendered and the change given back; a short sale cannot be completed; the drawer total matches the sales behind it |
 
 ## Out of scope for v1
 
