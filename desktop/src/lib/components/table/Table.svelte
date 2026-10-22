@@ -26,7 +26,7 @@
       <tr class="border-b border-hairline">
         {#each headers as header}
           <th
-            class="whitespace-nowrap px-4 py-3 text-start text-caption font-normal text-ink-mute"
+            class="whitespace-nowrap px-3 py-2 text-start text-caption font-normal text-ink-mute"
           >
             {header}
           </th>

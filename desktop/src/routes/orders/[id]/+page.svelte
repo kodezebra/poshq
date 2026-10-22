@@ -1,8 +1,9 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { ArrowLeft, Ban, RefreshCw, Trash2 } from "@lucide/svelte";
+  import { Ban, RefreshCw, Trash2 } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
+  import ActionMenu from "$lib/components/ui/ActionMenu.svelte";
   import Button from "$lib/components/button/Button.svelte";
   import Card from "$lib/components/card/Card.svelte";
   import OrderStatusBadge from "$lib/components/order/OrderStatusBadge.svelte";
@@ -90,18 +91,10 @@
   }
 </script>
 
-<div class="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-  <a
-    href="/orders"
-    class="inline-flex items-center gap-1.5 text-caption text-ink-mute transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-  >
-    <ArrowLeft class="size-3.5" />
-    All orders
-  </a>
-
+<div class="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6">
   {#if error}
     <EmptyState
-      class="mt-6"
+      class="mt-4"
       title="Could not load this order"
       description={error}
     >
@@ -117,12 +110,12 @@
     </EmptyState>
   {:else if loading}
     <div
-      class="mt-6 h-72 animate-pulse rounded-lg border border-hairline bg-canvas-soft"
+      class="mt-4 h-72 animate-pulse rounded-lg border border-hairline bg-canvas-soft"
       aria-busy="true"
     ></div>
   {:else if !record}
     <EmptyState
-      class="mt-6"
+      class="mt-4"
       title="Order not found"
       description="This order may have been deleted."
     >
@@ -134,7 +127,11 @@
     {@const order = record.order}
     {@const items = record.items}
 
-    <PageHeader class="mt-4" eyebrow="Order" title={order.orderNo}>
+    <PageHeader
+      eyebrow="Order"
+      title={order.orderNo}
+      back={{ href: "/orders", label: "All orders" }}
+    >
       <p>
         {formatDateTime(order.createdAt)}
       </p>
@@ -142,31 +139,38 @@
       {#snippet actions()}
         <OrderStatusBadge status={order.status} />
         {#if order.status === "completed"}
-          <Button variant="secondary" onclick={() => ask("void")}>
+          <Button variant="secondary" size="sm" onclick={() => ask("void")}>
             <Ban class="size-4" />
             Void
           </Button>
         {/if}
-        <Button variant="ghost" onclick={() => ask("delete")}>
-          <Trash2 class="size-4" />
-          Delete
-        </Button>
+        <ActionMenu
+          label="Order actions"
+          items={[
+            {
+              label: "Delete order",
+              icon: Trash2,
+              destructive: true,
+              onselect: () => ask("delete"),
+            },
+          ]}
+        />
       {/snippet}
     </PageHeader>
 
-    <div class="mt-6 grid gap-6 lg:grid-cols-3">
+    <div class="mt-4 grid gap-4 lg:grid-cols-3">
       <div class="lg:col-span-2">
         <Table headers={["Item", "Qty", "Unit price", "Line total"]}>
           {#each items as item (item.id)}
             <tr>
-              <td class="px-4 py-3 text-ink">{item.name}</td>
-              <td class="tnum whitespace-nowrap px-4 py-3 text-ink-mute">
+              <td class="px-3 py-2 text-ink">{item.name}</td>
+              <td class="tnum whitespace-nowrap px-3 py-2 text-ink-mute">
                 {item.qty}
               </td>
-              <td class="tnum whitespace-nowrap px-4 py-3 text-ink-secondary">
+              <td class="tnum whitespace-nowrap px-3 py-2 text-ink-secondary">
                 {formatUGX(item.unitPrice)}
               </td>
-              <td class="tnum whitespace-nowrap px-4 py-3 font-medium text-ink">
+              <td class="tnum whitespace-nowrap px-3 py-2 font-medium text-ink">
                 {formatUGX(item.lineTotal)}
               </td>
             </tr>
@@ -181,9 +185,9 @@
         {/if}
       </div>
 
-      <Card>
+      <Card class="self-start lg:sticky lg:top-14">
         <p class="text-caption text-ink-mute">Summary</p>
-        <div class="mt-3">
+        <div class="mt-2">
           <OrderTotals
             subtotal={order.subtotal}
             tax={order.tax}

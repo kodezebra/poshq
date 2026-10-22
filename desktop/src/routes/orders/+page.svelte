@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ChevronRight, Receipt, RefreshCw, SearchX } from "@lucide/svelte";
+  import { Receipt, RefreshCw, SearchX } from "@lucide/svelte";
   import Button from "$lib/components/button/Button.svelte";
   import Input from "$lib/components/input/Input.svelte";
   import OrderStatusBadge from "$lib/components/order/OrderStatusBadge.svelte";
@@ -73,7 +73,7 @@
   );
 </script>
 
-<div class="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+<div class="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6">
   <PageHeader eyebrow="Register 01" title="Orders">
     <p aria-live="polite">
       {#if loading}
@@ -85,22 +85,28 @@
     </p>
 
     {#snippet actions()}
-      <div class="w-full sm:w-64">
+      <div class="w-full sm:w-60">
         <Input
           bind:value={search}
           placeholder="Search order number…"
           aria-label="Search orders"
+          class="h-9"
         />
       </div>
-      <div class="w-full sm:w-40">
-        <Select bind:value={status} options={STATUS_OPTIONS} aria-label="Status" />
+      <div class="w-full sm:w-36">
+        <Select
+          bind:value={status}
+          options={STATUS_OPTIONS}
+          aria-label="Status"
+          class="h-9"
+        />
       </div>
     {/snippet}
   </PageHeader>
 
   {#if error}
     <EmptyState
-      class="mt-6"
+      class="mt-4"
       title="Could not load orders"
       description={error}
     >
@@ -116,58 +122,43 @@
     </EmptyState>
   {:else if loading}
     <div
-      class="mt-6 h-72 animate-pulse rounded-lg border border-hairline bg-canvas-soft"
+      class="mt-4 h-72 animate-pulse rounded-lg border border-hairline bg-canvas-soft"
       aria-busy="true"
     ></div>
   {:else if rows.length}
     <Table
-      class="mt-6"
-      headers={[
-        "Order",
-        "Date",
-        "Items",
-        "Status",
-        "Subtotal",
-        "VAT",
-        "Total",
-        "Payment",
-        "",
-      ]}
+      class="mt-4"
+      headers={["Order", "Date", "Items", "Status", "Total", "Payment"]}
     >
       {#each rows as order (order.id)}
-        <tr class="group transition-colors hover:bg-canvas-soft">
-          <td class="whitespace-nowrap px-4 py-3">
+        <tr class="relative transition-colors hover:bg-canvas-soft">
+          <td class="whitespace-nowrap px-3 py-2">
             <a
               href="/orders/{order.id}"
-              class="text-body-tabular text-primary underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              class="text-body-tabular text-primary underline-offset-2 after:absolute after:inset-0 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               {order.orderNo}
             </a>
           </td>
-          <td class="whitespace-nowrap px-4 py-3 text-ink-mute">
+          <td class="whitespace-nowrap px-3 py-2 text-ink-mute">
             {formatDateTime(order.createdAt)}
           </td>
-          <td class="whitespace-nowrap px-4 py-3 text-ink-mute">
-            {order.itemCount}
-            {order.itemCount === 1 ? "line" : "lines"}
+          <td class="whitespace-nowrap px-3 py-2 text-ink-mute">
+            {order.itemCount}×
             <span class="text-ink-mute-2">
               · {order.unitCount} {order.unitCount === 1 ? "unit" : "units"}
             </span>
           </td>
-          <td class="whitespace-nowrap px-4 py-3">
+          <td class="whitespace-nowrap px-3 py-2">
             <OrderStatusBadge status={order.status} />
           </td>
-          <td class="tnum whitespace-nowrap px-4 py-3 text-ink-secondary">
-            {formatUGX(order.subtotal)}
-          </td>
-          <td class="tnum whitespace-nowrap px-4 py-3 text-ink-mute">
-            {formatUGX(order.tax)}
-            <span class="text-ink-mute-2">({order.taxRate}%)</span>
-          </td>
-          <td class="tnum whitespace-nowrap px-4 py-3 font-medium text-ink">
+          <td class="tnum whitespace-nowrap px-3 py-2 font-medium text-ink">
             {formatUGX(order.total)}
+            <span class="font-normal text-caption text-ink-mute-2">
+              VAT {order.taxRate}%
+            </span>
           </td>
-          <td class="whitespace-nowrap px-4 py-3">
+          <td class="whitespace-nowrap px-3 py-2">
             <PaymentSummary
               compact
               method={order.paymentMethod}
@@ -175,21 +166,12 @@
               change={order.changeGiven}
             />
           </td>
-          <td class="px-2 py-3 text-right">
-            <a
-              href="/orders/{order.id}"
-              aria-label={`Open ${order.orderNo}`}
-              class="inline-flex items-center text-ink-mute transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-            >
-              <ChevronRight class="size-4" />
-            </a>
-          </td>
         </tr>
       {/each}
     </Table>
   {:else if query}
     <EmptyState
-      class="mt-6"
+      class="mt-4"
       title={`No orders match “${query}”`}
       description="Try a different order number."
     >
@@ -211,7 +193,7 @@
     </EmptyState>
   {:else if status !== "all"}
     <EmptyState
-      class="mt-6"
+      class="mt-4"
       title="No {status} orders"
       description="Orders will appear here as soon as they are recorded."
     >
@@ -221,7 +203,7 @@
     </EmptyState>
   {:else}
     <EmptyState
-      class="mt-6"
+      class="mt-4"
       title="No orders yet"
       description="Charge a sale on the terminal and it will show up here."
     >
