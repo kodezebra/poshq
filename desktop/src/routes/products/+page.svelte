@@ -1,13 +1,16 @@
 <script lang="ts">
   import {
+    LayoutGrid,
+    LayoutList,
     PackageSearch,
-    Pencil,
     Plus,
     RefreshCw,
     SearchX,
+    Settings2,
     Trash2,
   } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
+  import ActionMenu from "$lib/components/ui/ActionMenu.svelte";
   import Button from "$lib/components/button/Button.svelte";
   import Input from "$lib/components/input/Input.svelte";
   import ProductCard from "$lib/components/product-card/ProductCard.svelte";
@@ -23,7 +26,7 @@
   } from "$lib/db/products";
   import type { Product, ProductInput } from "$lib/db/schema";
   import { cart } from "$lib/stores/cart.svelte";
-  import { errorMessage } from "$lib/utils";
+  import { cn, errorMessage, formatUGX } from "$lib/utils";
 
   let search = $state("");
   let query = $state("");
@@ -31,6 +34,7 @@
   let products = $state<Product[]>([]);
   let loading = $state(true);
   let error = $state<string | null>(null);
+  let layout = $state<"list" | "grid">("list");
 
   let formOpen = $state(false);
   let editing = $state<Product | null>(null);
@@ -144,7 +148,7 @@
   }
 </script>
 
-<div class="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+<div class="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6">
   <PageHeader eyebrow="Catalog" title="Products">
     <p aria-live="polite">
       {#if loading}
@@ -157,14 +161,55 @@
     </p>
 
     {#snippet actions()}
-      <div class="w-full sm:w-72">
+      <div class="w-full sm:w-64">
         <Input
           bind:value={search}
           placeholder="Search name, SKU or category…"
           aria-label="Search products"
+          class="h-9"
         />
       </div>
-      <Button onclick={openCreate}>
+
+      <div
+        class="flex shrink-0 items-center gap-0.5 rounded-md border border-hairline p-0.5"
+        role="group"
+        aria-label="Catalog layout"
+      >
+        <button
+          type="button"
+          aria-pressed={layout === "list"}
+          aria-label="List view"
+          title="List view"
+          onclick={() => (layout = "list")}
+          class={cn(
+            "inline-flex size-8 items-center justify-center rounded-sm transition-colors",
+            "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+            layout === "list"
+              ? "bg-canvas-soft text-ink"
+              : "text-ink-mute hover:text-ink",
+          )}
+        >
+          <LayoutList class="size-4" />
+        </button>
+        <button
+          type="button"
+          aria-pressed={layout === "grid"}
+          aria-label="Grid view"
+          title="Grid view"
+          onclick={() => (layout = "grid")}
+          class={cn(
+            "inline-flex size-8 items-center justify-center rounded-sm transition-colors",
+            "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+            layout === "grid"
+              ? "bg-canvas-soft text-ink"
+              : "text-ink-mute hover:text-ink",
+          )}
+        >
+          <LayoutGrid class="size-4" />
+        </button>
+      </div>
+
+      <Button size="sm" onclick={openCreate}>
         <Plus class="size-4" />
         Add product
       </Button>
@@ -173,7 +218,7 @@
 
   {#if error}
     <EmptyState
-      class="mt-6"
+      class="mt-4"
       title="Could not load products"
       description={error}
     >
@@ -188,46 +233,94 @@
       {/snippet}
     </EmptyState>
   {:else if loading}
-    <ul class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-busy="true">
-      {#each Array(8) as _, index (index)}
-        <li
-          class="h-56 animate-pulse rounded-lg border border-hairline bg-canvas-soft"
-        ></li>
-      {/each}
-    </ul>
+    <div
+      class="mt-4 h-72 animate-pulse rounded-lg border border-hairline bg-canvas-soft"
+      aria-busy="true"
+    ></div>
   {:else if products.length}
-    <ul class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {#each products as product (product.id)}
-        <li>
-          <ProductCard {product}>
-            {#snippet actions()}
-              <Button
-                variant="ghost"
-                size="sm"
-                onclick={() => openEdit(product)}
-                aria-label={`Edit ${product.name}`}
-              >
-                <Pencil class="size-3.5" />
-                Edit
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                class="text-ruby hover:bg-ruby/5 hover:text-ruby"
-                onclick={() => askDelete(product)}
-                aria-label={`Delete ${product.name}`}
-              >
-                <Trash2 class="size-3.5" />
-                Delete
-              </Button>
-            {/snippet}
-          </ProductCard>
-        </li>
-      {/each}
-    </ul>
+    {#if layout === "list"}
+      <ul
+        class="mt-4 divide-y divide-hairline overflow-hidden rounded-lg border border-hairline bg-canvas"
+      >
+        {#each products as product (product.id)}
+          <li
+            class="group relative flex items-center gap-4 px-3 py-2 transition-colors hover:bg-canvas-soft"
+          >
+            <button
+              type="button"
+              onclick={() => openEdit(product)}
+              class="min-w-0 flex-1 text-left after:absolute after:inset-0 focus-visible:outline-none"
+              aria-label={`Edit ${product.name}`}
+            >
+              <span class="block truncate text-body-md text-ink">
+                {product.name}
+              </span>
+            </button>
+
+            <span
+              class="hidden w-48 shrink-0 truncate text-caption text-ink-mute sm:block"
+            >
+              {product.category}{#if product.sku} · {product.sku}{/if}
+            </span>
+
+            <span class="tnum w-24 shrink-0 text-right text-body-md text-ink">
+              {formatUGX(product.price)}
+            </span>
+
+            <div class="relative z-10">
+              <ActionMenu
+                label={`Actions for ${product.name}`}
+                items={[
+                  {
+                    label: "Edit product",
+                    icon: Settings2,
+                    onselect: () => openEdit(product),
+                  },
+                  {
+                    label: "Delete product",
+                    icon: Trash2,
+                    destructive: true,
+                    onselect: () => askDelete(product),
+                  },
+                ]}
+              />
+            </div>
+          </li>
+        {/each}
+      </ul>
+    {:else}
+      <ul
+        class="mt-4 grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(15rem,1fr))]"
+      >
+        {#each products as product (product.id)}
+          <li>
+            <ProductCard {product}>
+              {#snippet actions()}
+                <ActionMenu
+                  label={`Actions for ${product.name}`}
+                  items={[
+                    {
+                      label: "Edit product",
+                      icon: Settings2,
+                      onselect: () => openEdit(product),
+                    },
+                    {
+                      label: "Delete product",
+                      icon: Trash2,
+                      destructive: true,
+                      onselect: () => askDelete(product),
+                    },
+                  ]}
+                />
+              {/snippet}
+            </ProductCard>
+          </li>
+        {/each}
+      </ul>
+    {/if}
   {:else if query}
     <EmptyState
-      class="mt-6"
+      class="mt-4"
       title={`No products match “${query}”`}
       description="Try a different name, SKU or category."
     >
@@ -249,7 +342,7 @@
     </EmptyState>
   {:else}
     <EmptyState
-      class="mt-6"
+      class="mt-4"
       title="No products yet"
       description="Add your first product to start selling."
     >

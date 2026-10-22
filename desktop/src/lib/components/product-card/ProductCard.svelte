@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Package, Tag } from "@lucide/svelte";
+  import { Tag } from "@lucide/svelte";
   import type { Snippet } from "svelte";
   import { cn, formatUGX } from "$lib/utils";
   import type { Product } from "$lib/db/schema";
@@ -17,21 +17,17 @@
     className,
   )}
 >
-  <div class="aspect-[16/10] w-full overflow-hidden bg-canvas-soft">
-    {#if product.imageUrl}
+  {#if product.imageUrl}
+    <div class="aspect-[16/10] w-full overflow-hidden bg-canvas-soft">
       <img
         src={product.imageUrl}
         alt={product.name}
         class="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
       />
-    {:else}
-      <div class="flex size-full items-center justify-center">
-        <Package class="size-7 text-hairline-input" />
-      </div>
-    {/if}
-  </div>
+    </div>
+  {/if}
 
-  <div class="flex flex-1 flex-col gap-1.5 p-4">
+  <div class="flex flex-1 flex-col gap-1 p-3">
     <div class="flex items-start justify-between gap-2">
       <h3 class="line-clamp-1 text-body-md text-ink">{product.name}</h3>
       <span class="tnum shrink-0 text-body-md text-ink">
@@ -40,12 +36,12 @@
     </div>
     <div class="flex items-center gap-1.5 text-caption text-ink-mute">
       <Tag class="size-3.5" />
-      <span>{product.category}</span>
+      <span class="truncate">{product.category}</span>
     </div>
   </div>
 
   {#if actions}
-    <div class="flex items-center justify-end gap-1 border-t border-hairline px-3 py-2">
+    <div class="flex items-center justify-end border-t border-hairline px-2 py-1">
       {@render actions()}
     </div>
   {/if}
