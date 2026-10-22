@@ -9,11 +9,11 @@
   }: { mobileOpen?: boolean; ontoggle: () => void } = $props();
 </script>
 
-<nav class="fixed inset-x-0 top-0 z-50 h-14 border-b border-hairline bg-canvas">
-  <div class="flex h-full items-center gap-3 px-3 sm:px-5">
+<nav class="fixed inset-x-0 top-0 z-50 h-12 border-b border-hairline bg-canvas">
+  <div class="flex h-full items-center gap-3 px-3">
     <button
       type="button"
-      class="inline-flex size-9 items-center justify-center rounded-md text-ink-secondary transition-colors hover:bg-canvas-soft hover:text-ink sm:hidden"
+      class="inline-flex size-8 items-center justify-center rounded-md text-ink-secondary transition-colors hover:bg-canvas-soft hover:text-ink sm:hidden"
       aria-controls="app-sidebar"
       aria-expanded={mobileOpen}
       aria-label={mobileOpen ? "Close navigation" : "Open navigation"}

@@ -20,7 +20,7 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="min-h-screen bg-canvas-soft">
+<div class="min-h-dvh bg-canvas-soft">
   <TopBar {mobileOpen} ontoggle={toggle} />
   <Sidebar {mobileOpen} onclose={close} />
 
@@ -34,7 +34,7 @@
     ></button>
   {/if}
 
-  <main class="min-h-screen pt-14 sm:pl-64">
+  <main class="min-h-dvh pt-12 sm:pl-16">
     {@render children()}
   </main>
 </div>

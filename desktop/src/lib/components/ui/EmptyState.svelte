@@ -19,7 +19,7 @@
 
 <div
   class={cn(
-    "flex flex-col items-center rounded-lg border border-dashed border-hairline bg-canvas px-6 py-16 text-center",
+    "flex flex-col items-center rounded-lg border border-dashed border-hairline bg-canvas px-6 py-12 text-center",
     className,
   )}
 >

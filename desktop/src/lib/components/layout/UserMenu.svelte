@@ -18,16 +18,13 @@
     {#snippet child({ props })}
       <button
         {...props}
-        class="flex items-center gap-2 rounded-pill p-1 pe-1.5 transition-colors hover:bg-canvas-soft"
+        class="flex items-center gap-1.5 rounded-pill p-1 pe-1 transition-colors hover:bg-canvas-soft"
         aria-label="Open account menu"
       >
         <span
-          class="flex size-8 items-center justify-center rounded-full bg-brand-dark text-[11px] tracking-wide text-on-primary"
+          class="flex size-7 items-center justify-center rounded-full bg-brand-dark text-[10px] tracking-wide text-on-primary"
         >
           {user.initials}
-        </span>
-        <span class="hidden text-caption text-ink-secondary sm:block">
-          {user.name}
         </span>
         <ChevronDown class="size-3.5 text-ink-mute" />
       </button>
