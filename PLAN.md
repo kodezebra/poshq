@@ -27,18 +27,18 @@ Currency: **UGX** — whole shillings only (no minor unit). VAT: **0% or 18%**, 
 
 ## M1 — Database foundation
 
-- [ ] Add deps: `drizzle-orm`, `drizzle-kit`, `drizzle-zod`, `zod`, `svelte-sonner` (+ `rusqlite` in Cargo)
-- [ ] `src/lib/db/schema.ts`: `products`, `orders`, `order_items`, `settings` + indexes + inferred types + zod insert schemas
+- [x] Add deps: `drizzle-orm`, `drizzle-kit`, `drizzle-zod`, `zod`, `svelte-sonner` (+ `rusqlite` in Cargo)
+- [x] `src/lib/db/schema.ts`: `products`, `orders`, `order_items`, `settings` + indexes + inferred types + zod insert schemas
   - `products`: `id`, `name`, `sku` (unique, nullable), `price` int UGX, `category`, `image_url`, `active`, timestamps
   - `orders`: `id` text uuid PK, `order_no` unique, `status` `completed|void`, `subtotal`, `tax`, `tax_rate` int, `total`, `payment_method`, `created_at`, `voided_at`
   - `order_items`: `id`, `order_id` FK cascade, `product_id` FK set null, `name` snapshot, `unit_price`, `qty`, `line_total`
   - `settings`: `key` PK text, `value` text — seeded with `vat_rate = "18"`
-- [ ] `drizzle.config.ts` with `out: "./src-tauri/migrations"`
-- [ ] Generate `src-tauri/migrations/0000_init.sql`
-- [ ] `src-tauri/src/db.rs`: open DB, `journal_mode=WAL`, `foreign_keys=ON`, `busy_timeout`, `user_version` migration runner, seed local catalog (Rolex, Soda 500ml, Samosa, Bottled Water) and `vat_rate=18` when empty
-- [ ] `src-tauri/src/commands.rs`: `db_query`, `db_batch` (single transaction), value → JSON mapping
-- [ ] `src/lib/db/client.ts`: drizzle proxy driver bound to `invoke`; typed `db`
-- [ ] Verify: launch app, `posh.db` created, 4 seed rows, `cargo check` + `bun run check` pass
+- [x] `drizzle.config.ts` with `out: "./src-tauri/migrations"`
+- [x] Generate `src-tauri/migrations/0000_init.sql`
+- [x] `src-tauri/src/db.rs`: open DB, `journal_mode=WAL`, `foreign_keys=ON`, `busy_timeout`, `user_version` migration runner, seed local catalog (Rolex, Soda 500ml, Samosa, Bottled Water) and `vat_rate=18` when empty
+- [x] `src-tauri/src/commands.rs`: `db_query`, `db_batch` (single transaction), value → JSON mapping
+- [x] `src/lib/db/client.ts`: drizzle proxy driver bound to `invoke`; typed `db`
+- [x] Verify: launch app, `posh.db` created, 4 seed rows, `cargo check` + `bun run check` pass
 
 **Commit:** `feat(db): drizzle schema on rusqlite proxy with migrations and seed`
 
