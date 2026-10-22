@@ -67,7 +67,6 @@
                 onclick={() => onsort?.(column.sortKey!)}
                 class={cn(
                   "flex h-9 w-full items-center gap-1.5 px-3 transition-colors hover:text-ink",
-                  "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary",
                   column.align === "end" ? "justify-end" : "justify-start",
                   direction(column) && "text-ink",
                 )}

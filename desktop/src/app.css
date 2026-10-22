@@ -20,7 +20,6 @@
   --color-primary-press: #1f2a96;
   --color-primary-hover: #3a4ae0; /* 6.49:1 white-on */
   --color-primary-subdued: #dfe2fa; /* selection wash only */
-  --color-primary-soft: #8e9bff; /* action on dark chrome · 7.03:1 */
   --color-brand-dark: #14181d; /* legacy alias for chrome */
 
   /* ---- Chrome (rail, top bar, status bar) ---------------------------- */
@@ -44,7 +43,7 @@
   --color-ink: #12151a; /* 17.52:1 */
   --color-ink-secondary: #3a4048; /* 10.02:1 */
   --color-ink-mute: #5c6570; /* 5.66:1 */
-  --color-ink-mute-2: #565e68;
+  --color-ink-faint: #6b7280; /* 4.63:1 on work · metadata, never a control */
   --color-on-primary: #ffffff;
 
   /* ---- State --------------------------------------------------------- */

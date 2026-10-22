@@ -33,7 +33,7 @@
       <span class="tnum text-ink-secondary">{formatUGX(tendered)}</span>
     </span>
     {#if method === "cash" && change > 0}
-      <span class="tnum text-caption text-ink-mute-2">
+      <span class="tnum text-caption text-ink-faint">
         Change {formatUGX(change)}
       </span>
     {/if}

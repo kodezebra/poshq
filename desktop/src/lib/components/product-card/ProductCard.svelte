@@ -25,7 +25,7 @@
         class="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
       />
     {:else}
-      <span class="text-body-lg text-ink-mute-2" aria-hidden="true">
+      <span class="text-body-lg text-ink-faint" aria-hidden="true">
         {product.name.charAt(0)}
       </span>
     {/if}

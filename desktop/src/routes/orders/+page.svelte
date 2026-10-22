@@ -173,7 +173,7 @@
             class="tnum whitespace-nowrap px-3 py-2 text-end text-ink-mute"
           >
             {order.itemCount}×
-            <span class="text-ink-mute-2">
+            <span class="text-ink-faint">
               · {order.unitCount} {order.unitCount === 1 ? "unit" : "units"}
             </span>
           </td>
@@ -184,7 +184,7 @@
             class="tnum whitespace-nowrap px-3 py-2 text-end font-medium text-ink"
           >
             {formatUGX(order.total)}
-            <span class="font-normal text-caption text-ink-mute-2">
+            <span class="font-normal text-caption text-ink-faint">
               VAT {order.taxRate}%
             </span>
           </td>
