@@ -8,8 +8,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
-            let database = db::init(app.handle())
-                .map_err(|error| std::io::Error::other(error))?;
+            let database = db::init(app.handle()).map_err(std::io::Error::other)?;
             app.manage(database);
             Ok(())
         })
