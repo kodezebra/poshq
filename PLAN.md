@@ -96,11 +96,13 @@ Currency: **UGX** — whole shillings only (no minor unit). VAT: **0% or 18%**, 
 
 - [x] Unified error handling: Rust `Result<_, String>` → toast; no silent failures
 - [x] Failures shown to a cashier never carry SQL: Rust logs the statement, the UI words the reason plainly
-- [ ] Loading/empty states on every async surface; focus search on Terminal mount
-- [ ] `vitest` for `parseUGX` / `formatUGX` / cart totals at 0% and 18% VAT
-- [ ] README: run, DB location, migration workflow, UGX/VAT notes
-- [ ] QA pass: create → edit → search → add to cart → qty → charge → orders → void → delete
-- [ ] `bun run check`, `cargo clippy -- -D warnings`, `bun run tauri build` smoke
+- [x] Loading/empty states on every async surface; focus search on Terminal mount
+- [x] `vitest` for `parseUGX` / `formatUGX` / cart totals at 0% and 18% VAT
+- [x] README: run, DB location, migration workflow, UGX/VAT notes
+- [x] QA pass: create → edit → search → add to cart → qty → charge → orders → void → delete
+- [x] `bun run check`, `cargo clippy -- -D warnings`, `bun run tauri build` smoke
+  - `tauri build` compiles and links the app; the AppImage packaging step downloads `linuxdeploy`
+    from GitHub, so bundling itself needs network access. Packaging is verified on a networked machine.
 
 **Commits:**
 1. `fix(db): keep SQL out of user-facing errors`
