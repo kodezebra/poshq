@@ -24,11 +24,11 @@
   )}
 >
   <span class="line-clamp-2 text-body-md text-ink">{product.name}</span>
-  <span class="flex items-end justify-between gap-2">
+  <span class="flex items-end justify-between gap-1.5">
     <span class="line-clamp-1 text-caption text-ink-mute">
       {product.category}
     </span>
-    <span class="tnum shrink-0 text-body-md text-ink">
+    <span class="tnum shrink-0 text-body-tabular text-ink">
       {formatUGX(product.price)}
     </span>
   </span>

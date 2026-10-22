@@ -266,7 +266,7 @@
   </section>
 
   <aside
-    class="flex min-h-[360px] shrink-0 flex-col border-t border-hairline bg-canvas lg:min-h-0 lg:w-[336px] lg:border-l lg:border-t-0"
+    class="flex min-h-[360px] shrink-0 flex-col border-t border-hairline bg-canvas lg:min-h-0 lg:w-[360px] lg:border-l lg:border-t-0"
   >
     <CartPanel oncharge={charge} {charging} />
   </aside>

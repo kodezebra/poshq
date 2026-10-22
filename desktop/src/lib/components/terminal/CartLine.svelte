@@ -14,10 +14,12 @@
   } = $props();
 </script>
 
-<li class="flex items-center gap-1 py-1.5">
+<li class="flex items-center gap-2 py-1.5">
   <div class="min-w-0 flex-1" title={`${line.name} — ${formatUGX(line.unitPrice)} each`}>
     <p class="truncate text-body-md text-ink">{line.name}</p>
-    <p class="tnum text-caption text-ink-mute">{formatUGX(line.unitPrice)} each</p>
+    <p class="tnum truncate text-caption text-ink-mute">
+      {formatUGX(line.unitPrice)} each
+    </p>
   </div>
 
   <div class="flex shrink-0 items-center">
@@ -40,7 +42,7 @@
     </button>
   </div>
 
-  <span class="tnum w-16 shrink-0 text-right text-body-md text-ink">
+  <span class="tnum w-[4.5rem] shrink-0 text-right text-body-md text-ink">
     {formatUGX(lineTotal(line))}
   </span>
 
