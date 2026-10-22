@@ -172,7 +172,7 @@
             aria-pressed={category === null}
             onclick={() => (category = null)}
             class={cn(
-              "h-7 shrink-0 rounded-sm border px-2.5 text-caption transition-colors",
+              "h-8 shrink-0 rounded-sm border px-2.5 text-caption transition-colors",
               category === null
                 ? "border-primary bg-primary/5 text-primary"
                 : "border-hairline text-ink-secondary hover:bg-canvas-soft",
@@ -186,7 +186,7 @@
               aria-pressed={category === name}
               onclick={() => (category = category === name ? null : name)}
               class={cn(
-                "h-7 shrink-0 rounded-sm border px-2.5 text-caption transition-colors",
+                "h-8 shrink-0 rounded-sm border px-2.5 text-caption transition-colors",
                 category === name
                   ? "border-primary bg-primary/5 text-primary"
                   : "border-hairline text-ink-secondary hover:bg-canvas-soft",
