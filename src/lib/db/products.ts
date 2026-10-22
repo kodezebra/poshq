@@ -1,6 +1,6 @@
 import { and, asc, eq, like, or, sql } from "drizzle-orm";
 import { db } from "./client";
-import { errorMessage } from "$lib/utils";
+import { friendlyError } from "./errors";
 import {
   products,
   productInputSchema,
@@ -38,17 +38,6 @@ export async function listProducts({
 
 export async function getProduct(id: number): Promise<Product | undefined> {
   return db.select().from(products).where(eq(products.id, id)).get();
-}
-
-/** Readable messages for the two failures a cashier can actually cause. */
-function friendlyError(error: unknown): Error {
-  const message = errorMessage(error);
-
-  if (/UNIQUE constraint failed: (products\.sku|index 'products_sku_idx')/i.test(message)) {
-    return new Error("That SKU is already used by another product.");
-  }
-
-  return new Error(message);
 }
 
 /** Only the fields the form owns; `imageUrl` and `active` are preserved on edit. */
@@ -92,5 +81,9 @@ export async function updateProduct(
 
 /** Past orders keep their item snapshots; `order_items.product_id` is set null. */
 export async function deleteProduct(id: number): Promise<void> {
-  await db.delete(products).where(eq(products.id, id));
+  try {
+    await db.delete(products).where(eq(products.id, id));
+  } catch (cause) {
+    throw friendlyError(cause);
+  }
 }

@@ -2,6 +2,7 @@ import { desc, like } from "drizzle-orm";
 import type { CartLine } from "$lib/stores/cart.svelte";
 import type { VatRate } from "$lib/utils";
 import { db } from "./client";
+import { friendlyError } from "./errors";
 import { orderItems, orders } from "./schema";
 
 export type PaymentMethod = "cash" | "card";
@@ -63,27 +64,31 @@ export async function createOrder({
   const tax = Math.round((subtotal * vatRate) / 100);
   const total = subtotal + tax;
 
-  await db.batch([
-    db.insert(orders).values({
-      id,
-      orderNo,
-      subtotal,
-      taxRate: vatRate,
-      tax,
-      total,
-      paymentMethod,
-    }),
-    ...lines.map((line) =>
-      db.insert(orderItems).values({
-        orderId: id,
-        productId: line.productId,
-        name: line.name,
-        unitPrice: line.unitPrice,
-        qty: line.qty,
-        lineTotal: line.unitPrice * line.qty,
+  try {
+    await db.batch([
+      db.insert(orders).values({
+        id,
+        orderNo,
+        subtotal,
+        taxRate: vatRate,
+        tax,
+        total,
+        paymentMethod,
       }),
-    ),
-  ]);
+      ...lines.map((line) =>
+        db.insert(orderItems).values({
+          orderId: id,
+          productId: line.productId,
+          name: line.name,
+          unitPrice: line.unitPrice,
+          qty: line.qty,
+          lineTotal: line.unitPrice * line.qty,
+        }),
+      ),
+    ]);
+  } catch (cause) {
+    throw friendlyError(cause);
+  }
 
   return { id, orderNo, subtotal, tax, total };
 }

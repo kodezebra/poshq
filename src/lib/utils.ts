@@ -49,6 +49,23 @@ export function formatDate(value: Date | string | number): string {
   })
 }
 
+/** Drizzle's own wrapper puts the generated SQL in the error message. */
+const DRIZZLE_QUERY_DUMP = /^failed query:/i
+
+/** A statement that reached the UI through some other path. */
+const SQL_STATEMENT =
+  /^\s*(select|insert\s+into|replace\s+into|update|delete\s+from)\b[\s\S]*"[^"]*"/i
+
+const GENERIC_DATABASE_ERROR =
+  "The database refused that request. Please try again."
+
+/** Query text is for the developer console, never for a cashier. */
+function withoutSql(message: string): string {
+  return DRIZZLE_QUERY_DUMP.test(message) || SQL_STATEMENT.test(message)
+    ? GENERIC_DATABASE_ERROR
+    : message
+}
+
 /**
  * Normalise an unknown failure for display. Tauri rejects commands with the
  * string returned by Rust, while Drizzle wraps driver failures in an error
@@ -70,6 +87,6 @@ export function errorMessage(error: unknown): string {
     current = (current as { cause?: unknown }).cause
   }
 
-  if (current instanceof Error) return current.message
-  return typeof current === "string" ? current : String(current)
+  if (current instanceof Error) return withoutSql(current.message)
+  return withoutSql(typeof current === "string" ? current : String(current))
 }

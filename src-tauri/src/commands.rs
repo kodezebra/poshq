@@ -16,7 +16,7 @@ pub struct QueryRequest {
 
 /// `rows` is `null` when a `get` matched nothing — Drizzle maps that to
 /// `undefined`. `all`/`values` return an array of positional row arrays.
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct QueryResponse {
     pub rows: Option<Vec<Value>>,
 }
@@ -54,31 +54,38 @@ fn from_sql_value(value: ValueRef<'_>) -> Value {
     }
 }
 
+/**
+ * Log the statement that failed for the developer console, then hand the UI a
+ * message that carries no SQL. The statement is the most useful thing to have
+ * while debugging, and the least useful thing to show a cashier.
+ */
+fn fail(sql: &str, error: impl std::fmt::Display) -> String {
+    eprintln!("[db] {sql}: {error}");
+    error.to_string()
+}
+
 fn execute(conn: &Connection, request: &QueryRequest) -> Result<QueryResponse, String> {
     let params: Vec<SqlValue> = request.params.iter().map(to_sql_value).collect();
 
     if request.method == "run" {
         conn.execute(&request.sql, params_from_iter(params))
-            .map_err(|error| format!("{}: {error}", request.sql))?;
+            .map_err(|error| fail(&request.sql, error))?;
         return Ok(QueryResponse { rows: Some(Vec::new()) });
     }
 
     let mut statement = conn
         .prepare(&request.sql)
-        .map_err(|error| format!("{}: {error}", request.sql))?;
+        .map_err(|error| fail(&request.sql, error))?;
     let columns = statement.column_count();
     let mut rows = statement
         .query(params_from_iter(params))
-        .map_err(|error| format!("{}: {error}", request.sql))?;
+        .map_err(|error| fail(&request.sql, error))?;
 
     let mut collected: Vec<Value> = Vec::new();
-    while let Some(row) = rows
-        .next()
-        .map_err(|error| format!("{}: {error}", request.sql))?
-    {
+    while let Some(row) = rows.next().map_err(|error| fail(&request.sql, error))? {
         let mut values = Vec::with_capacity(columns);
         for index in 0..columns {
-            let value = row.get_ref(index).map_err(|error| error.to_string())?;
+            let value = row.get_ref(index).map_err(|error| fail(&request.sql, error))?;
             values.push(from_sql_value(value));
         }
         collected.push(Value::Array(values));
@@ -274,6 +281,44 @@ mod tests {
             .query_row("SELECT COUNT(*) FROM order_items", [], |row| row.get(0))
             .expect("count items");
         assert_eq!(items, 1);
+    }
+
+    #[test]
+    fn failed_query_reports_the_reason_without_the_statement() {
+        let conn = memory_db();
+
+        let insert = |sku: &str| {
+            request(
+                "INSERT INTO products (name, sku, price, category) VALUES (?, ?, ?, ?)",
+                vec![
+                    Value::from("Rolex"),
+                    Value::from(sku),
+                    Value::from(3_500),
+                    Value::from("Food"),
+                ],
+                "run",
+            )
+        };
+
+        execute(&conn, &insert("ROL-001")).expect("insert");
+        let error = execute(&conn, &insert("ROL-001")).expect_err("duplicate sku");
+
+        assert!(
+            !error.to_lowercase().contains("insert into"),
+            "error leaked the statement: {error}"
+        );
+        assert!(
+            !error.contains("VALUES"),
+            "error leaked the statement: {error}"
+        );
+        assert!(
+            !error.contains('?'),
+            "error leaked the statement: {error}"
+        );
+        assert!(
+            error.contains("UNIQUE constraint failed"),
+            "error lost the reason: {error}"
+        );
     }
 
     #[test]
