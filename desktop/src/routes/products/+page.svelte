@@ -290,7 +290,7 @@
       </ul>
     {:else}
       <ul
-        class="mt-4 grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(15rem,1fr))]"
+        class="mt-4 grid items-start gap-3 [grid-template-columns:repeat(auto-fill,minmax(15rem,1fr))]"
       >
         {#each products as product (product.id)}
           <li>
