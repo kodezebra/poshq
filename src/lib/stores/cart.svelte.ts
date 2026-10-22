@@ -16,7 +16,7 @@ export const lineTotal = (line: CartLine) => line.unitPrice * line.qty;
  * with the register's loaded VAT rate, and every completed order snapshots
  * the rate it was charged at.
  */
-class Cart {
+export class Cart {
   lines = $state<CartLine[]>([]);
   vatRate = $state<VatRate>(DEFAULT_VAT_RATE);
 
