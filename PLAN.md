@@ -121,17 +121,23 @@ A till has to know how much cash it was handed and how much change it gave
 back. Everything else follows: the drawer total, the order history, and the
 proof that a sale was actually paid for in full.
 
-- [ ] `src/lib/payment.ts`: pure money helpers — `changeDue`, `shortfall`, `settle`,
+- [x] `src/lib/payment.ts`: pure money helpers — `changeDue`, `shortfall`, `settle`,
       `quickCash`, `CASH_NOTES`, `PaymentMethod`
-- [ ] `src/lib/db/schema.ts`: `orders.tendered` + `orders.change_given` (integer UGX)
-- [ ] Migration `0001_cash_handling.sql`, backfilling legacy cash orders, registered in `MIGRATIONS`
-- [ ] `db/orders.ts`: `createOrder()` settles the payment and refuses a sale that was not paid for;
+- [x] `src/lib/db/schema.ts`: `orders.tendered` + `orders.change_given` (integer UGX)
+- [x] Migration `0001_cash_handling.sql`, backfilling legacy cash orders, registered in `MIGRATIONS`
+- [x] `db/orders.ts`: `createOrder()` settles the payment and refuses a sale that was not paid for;
       `getCashSummary()` totals the cash in the drawer for the local day
-- [ ] `PaymentPad` in the cart footer: Cash/Card, tendered amount, exact + quick-note buttons,
+- [x] `PaymentPad` in the cart footer: Cash/Card, tendered amount, exact + quick-note buttons,
       live change readout, confirm blocked while the sale is short
-- [ ] Terminal shows the till total; the orders list and detail show tendered and change
-- [ ] Unit tests for the tender and change maths
-- [ ] Real-app smoke test covers cash → change → the persisted row
+- [x] Terminal shows the till total; the orders list and detail show tendered and change
+- [x] Unit tests for the tender and change maths
+- [x] Real-app smoke test covers cash → change → the persisted row
+  - pays with the first quick note that covers the total, asserts the change readout and the
+    "Give change" label, reads the row back out of SQLite, then removes the sale and restores
+    the database snapshot it took beforehand
+- [x] `bun run check`, `bunx vitest run` (45 tests), `cargo clippy --all-targets -- -D warnings`,
+  `cargo test` (9 tests), `bun run tauri build --no-bundle`
+  - bundling still needs `linuxdeploy` from GitHub; packaging is verified on a networked machine
 
 **Commits:**
 1. `docs(plan): plan M7 cash handling and change`
