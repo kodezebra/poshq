@@ -150,7 +150,7 @@
 >
   <section class="flex min-h-0 flex-1 flex-col">
     <header class="flex flex-wrap items-center gap-2 border-b border-hairline bg-canvas px-3 py-2">
-      <div class="min-w-0 flex-1 lg:max-w-72">
+      <div class="min-w-40 flex-1 lg:max-w-60">
         <Input
           id={SEARCH_ID}
           bind:value={search}
@@ -163,7 +163,7 @@
 
       {#if categories.length}
         <div
-          class="order-last -mx-1 flex w-full items-center gap-1.5 overflow-x-auto px-1 lg:order-none lg:mx-0 lg:w-auto lg:min-w-0 lg:flex-1 lg:px-0"
+          class="order-last -mx-1 flex w-full items-center gap-1.5 overflow-x-auto px-1 xl:order-none xl:mx-0 xl:w-auto xl:min-w-0 xl:flex-1 xl:px-0"
           role="group"
           aria-label="Category filter"
         >
@@ -199,7 +199,7 @@
       {/if}
 
       <div
-        class="flex shrink-0 items-center gap-2 rounded-pill border border-hairline px-2.5 py-1"
+        class="flex shrink-0 items-center gap-1.5 rounded-pill border border-hairline px-2 py-1"
         title="Cash in the drawer today"
       >
         <Wallet class="size-3.5 text-ink-mute" />

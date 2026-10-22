@@ -17,7 +17,7 @@
   type="button"
   onclick={() => onpick(product)}
   class={cn(
-    "flex h-full flex-col justify-between gap-2 rounded-lg border border-hairline bg-canvas p-3 text-left",
+    "flex h-full w-full flex-col justify-between gap-2 rounded-lg border border-hairline bg-canvas p-3 text-left",
     "transition-colors hover:border-primary/40 hover:bg-primary/5 active:bg-primary/10",
     "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
     className,
