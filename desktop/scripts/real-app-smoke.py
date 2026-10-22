@@ -372,6 +372,15 @@ def run_cash_scenario(
     snapshot = snapshot_database(db_path)
     keeper.append(snapshot)
 
+    # The pad only takes over the cart once the cashier commits to a payment.
+    open_pad, _ = app.button(lambda name: name.startswith("Charge"))
+    if open_pad is None:
+        report.check(False, "charge button opens the payment pad", "<no charge button>")
+        return
+    app.click(open_pad)
+    time.sleep(0.5)
+    app = App.find(app.pid)
+
     notes = quick_notes(app)
     covering = [(amount, node) for amount, node in notes if amount >= total]
     report.note("quick notes offered", ", ".join(format_ugx(amount) for amount, _ in notes))
@@ -498,7 +507,7 @@ def run_checks(
     till_before = till_total(body)
     report.note("cash drawer starts at", "unread" if till_before is None else str(till_before))
 
-    shown = re.search(r"(\d+)\s+shown", body)
+    shown = re.search(r"(\d+)\s+products?\s+shown", body)
     count = int(shown.group(1)) if shown else 0
     report.check(count > 0, "products loaded from the database", f"{count} shown")
 
