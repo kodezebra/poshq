@@ -1,12 +1,14 @@
 <script lang="ts">
   import { Package, Tag } from "@lucide/svelte";
+  import type { Snippet } from "svelte";
   import { cn, formatUGX } from "$lib/utils";
   import type { Product } from "$lib/db/schema";
 
   let {
     product,
+    actions,
     class: className,
-  }: { product: Product; class?: string } = $props();
+  }: { product: Product; actions?: Snippet; class?: string } = $props();
 </script>
 
 <article
@@ -41,4 +43,10 @@
       <span>{product.category}</span>
     </div>
   </div>
+
+  {#if actions}
+    <div class="flex items-center justify-end gap-1 border-t border-hairline px-3 py-2">
+      {@render actions()}
+    </div>
+  {/if}
 </article>

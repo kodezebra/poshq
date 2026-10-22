@@ -1,10 +1,29 @@
 <script lang="ts">
-  import { PackageSearch, RefreshCw, SearchX } from "@lucide/svelte";
+  import {
+    PackageSearch,
+    Pencil,
+    Plus,
+    RefreshCw,
+    SearchX,
+    Trash2,
+  } from "@lucide/svelte";
+  import { toast } from "svelte-sonner";
   import Button from "$lib/components/button/Button.svelte";
   import Input from "$lib/components/input/Input.svelte";
   import ProductCard from "$lib/components/product-card/ProductCard.svelte";
-  import { listProducts } from "$lib/db/products";
-  import type { Product } from "$lib/db/schema";
+  import ProductForm from "$lib/components/product-form/ProductForm.svelte";
+  import Dialog from "$lib/components/ui/Dialog.svelte";
+  import EmptyState from "$lib/components/ui/EmptyState.svelte";
+  import PageHeader from "$lib/components/ui/PageHeader.svelte";
+  import {
+    createProduct,
+    deleteProduct,
+    listProducts,
+    updateProduct,
+  } from "$lib/db/products";
+  import type { Product, ProductInput } from "$lib/db/schema";
+  import { cart } from "$lib/stores/cart.svelte";
+  import { errorMessage } from "$lib/utils";
 
   let search = $state("");
   let query = $state("");
@@ -12,6 +31,18 @@
   let products = $state<Product[]>([]);
   let loading = $state(true);
   let error = $state<string | null>(null);
+
+  let formOpen = $state(false);
+  let editing = $state<Product | null>(null);
+  let saving = $state(false);
+
+  let deleteOpen = $state(false);
+  let deleting = $state<Product | null>(null);
+  let deletingBusy = $state(false);
+
+  const categories = $derived(
+    [...new Set(products.map((product) => product.category))].sort(),
+  );
 
   // Debounce typing so each keystroke doesn't hit SQLite.
   $effect(() => {
@@ -35,8 +66,7 @@
         if (!cancelled) products = rows;
       })
       .catch((cause: unknown) => {
-        if (cancelled) return;
-        error = cause instanceof Error ? cause.message : String(cause);
+        if (!cancelled) error = errorMessage(cause);
       })
       .finally(() => {
         if (!cancelled) loading = false;
@@ -46,50 +76,117 @@
       cancelled = true;
     };
   });
+
+  function openCreate() {
+    editing = null;
+    formOpen = true;
+  }
+
+  function openEdit(product: Product) {
+    editing = product;
+    formOpen = true;
+  }
+
+  function askDelete(product: Product) {
+    deleting = product;
+    deleteOpen = true;
+  }
+
+  async function save(input: ProductInput) {
+    saving = true;
+
+    try {
+      if (editing) {
+        await updateProduct(editing.id, input);
+        toast.success("Product updated");
+      } else {
+        await createProduct(input);
+        toast.success("Product added");
+      }
+
+      formOpen = false;
+      editing = null;
+      reloadKey++;
+    } catch (cause) {
+      toast.error(editing ? "Could not update product" : "Could not add product", {
+        description: errorMessage(cause),
+      });
+    } finally {
+      saving = false;
+    }
+  }
+
+  async function confirmDelete() {
+    if (!deleting || deletingBusy) return;
+
+    const target = deleting;
+    const inCart = cart.lines.some((line) => line.productId === target.id);
+    deletingBusy = true;
+
+    try {
+      await deleteProduct(target.id);
+      cart.remove(target.id);
+
+      toast.success(`${target.name} deleted`, {
+        description: inCart ? "Also removed from the open sale." : undefined,
+      });
+
+      deleteOpen = false;
+      deleting = null;
+      reloadKey++;
+    } catch (cause) {
+      toast.error("Could not delete product", {
+        description: errorMessage(cause),
+      });
+    } finally {
+      deletingBusy = false;
+    }
+  }
 </script>
 
 <div class="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-  <header class="flex flex-wrap items-end justify-between gap-4">
-    <div>
-      <p class="eyebrow text-ink-mute">Catalog</p>
-      <h1 class="mt-1 text-display-lg text-ink">Products</h1>
-      <p class="mt-1 text-body-md text-ink-mute" aria-live="polite">
-        {#if loading}
-          Loading the catalog…
-        {:else}
-          {products.length}
-          {products.length === 1 ? "item" : "items"}
-          {query ? "matching your search" : "available on this register"}.
-        {/if}
-      </p>
-    </div>
+  <PageHeader eyebrow="Catalog" title="Products">
+    <p aria-live="polite">
+      {#if loading}
+        Loading the catalog…
+      {:else}
+        {products.length}
+        {products.length === 1 ? "item" : "items"}
+        {query ? "matching your search" : "available on this register"}.
+      {/if}
+    </p>
 
-    <div class="w-full sm:w-72">
-      <Input
-        bind:value={search}
-        placeholder="Search name, SKU or category…"
-        aria-label="Search products"
-      />
-    </div>
-  </header>
+    {#snippet actions()}
+      <div class="w-full sm:w-72">
+        <Input
+          bind:value={search}
+          placeholder="Search name, SKU or category…"
+          aria-label="Search products"
+        />
+      </div>
+      <Button onclick={openCreate}>
+        <Plus class="size-4" />
+        Add product
+      </Button>
+    {/snippet}
+  </PageHeader>
 
   {#if error}
-    <div
-      class="mt-6 rounded-lg border border-hairline bg-canvas p-6"
-      role="alert"
+    <EmptyState
+      class="mt-6"
+      title="Could not load products"
+      description={error}
     >
-      <p class="text-heading-sm text-ink">Could not load products</p>
-      <p class="mt-1 break-words text-body-md text-ink-mute">{error}</p>
-      <Button
-        variant="secondary"
-        size="sm"
-        class="mt-4"
-        onclick={() => reloadKey++}
-      >
-        <RefreshCw class="size-4" />
-        Try again
-      </Button>
-    </div>
+      {#snippet icon()}
+        <RefreshCw class="size-6" />
+      {/snippet}
+      {#snippet actions()}
+        <Button variant="secondary" size="sm" onclick={() => reloadKey++}>
+          <RefreshCw class="size-4" />
+          Try again
+        </Button>
+      {/snippet}
+    </EmptyState>
   {:else if loading}
     <ul class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-busy="true">
       {#each Array(8) as _, index (index)}
@@ -102,27 +199,112 @@
     <ul class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {#each products as product (product.id)}
         <li>
-          <ProductCard {product} />
+          <ProductCard {product}>
+            {#snippet actions()}
+              <Button
+                variant="ghost"
+                size="sm"
+                onclick={() => openEdit(product)}
+                aria-label={`Edit ${product.name}`}
+              >
+                <Pencil class="size-3.5" />
+                Edit
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                class="text-ruby hover:bg-ruby/5 hover:text-ruby"
+                onclick={() => askDelete(product)}
+                aria-label={`Delete ${product.name}`}
+              >
+                <Trash2 class="size-3.5" />
+                Delete
+              </Button>
+            {/snippet}
+          </ProductCard>
         </li>
       {/each}
     </ul>
-  {:else}
-    <div
-      class="mt-6 flex flex-col items-center rounded-lg border border-dashed border-hairline bg-canvas px-6 py-16 text-center"
+  {:else if query}
+    <EmptyState
+      class="mt-6"
+      title={`No products match “${query}”`}
+      description="Try a different name, SKU or category."
     >
-      {#if query}
-        <SearchX class="size-6 text-ink-mute" />
-        <p class="mt-3 text-heading-sm text-ink">No products match “{query}”</p>
-        <p class="mt-1 text-body-md text-ink-mute">
-          Try a different name, SKU or category.
-        </p>
-      {:else}
-        <PackageSearch class="size-6 text-ink-mute" />
-        <p class="mt-3 text-heading-sm text-ink">No products yet</p>
-        <p class="mt-1 text-body-md text-ink-mute">
-          Add your first product to start selling.
-        </p>
-      {/if}
-    </div>
+      {#snippet icon()}
+        <SearchX class="size-6" />
+      {/snippet}
+      {#snippet actions()}
+        <Button
+          variant="secondary"
+          size="sm"
+          onclick={() => {
+            search = "";
+            query = "";
+          }}
+        >
+          Clear search
+        </Button>
+      {/snippet}
+    </EmptyState>
+  {:else}
+    <EmptyState
+      class="mt-6"
+      title="No products yet"
+      description="Add your first product to start selling."
+    >
+      {#snippet icon()}
+        <PackageSearch class="size-6" />
+      {/snippet}
+      {#snippet actions()}
+        <Button size="sm" onclick={openCreate}>
+          <Plus class="size-4" />
+          Add product
+        </Button>
+      {/snippet}
+    </EmptyState>
   {/if}
 </div>
+
+<Dialog
+  bind:open={formOpen}
+  title={editing ? "Edit product" : "Add product"}
+  description={editing
+    ? "Changes apply to new sales. Past orders keep their snapshots."
+    : "New products appear on the terminal right away."}
+>
+  <ProductForm
+    product={editing}
+    {categories}
+    submitting={saving}
+    oncancel={() => (formOpen = false)}
+    onsubmit={save}
+  />
+</Dialog>
+
+<Dialog
+  bind:open={deleteOpen}
+  title="Delete product?"
+  description={deleting
+    ? `“${deleting.name}” will be removed from the catalog.`
+    : undefined}
+>
+  <p class="text-body-md text-ink-mute">
+    Past orders keep the name and price they were sold at. This cannot be
+    undone.
+  </p>
+
+  <div class="mt-6 flex justify-end gap-2 border-t border-hairline pt-4">
+    <Button variant="secondary" type="button" onclick={() => (deleteOpen = false)}>
+      Cancel
+    </Button>
+    <Button
+      variant="danger"
+      type="button"
+      onclick={confirmDelete}
+      disabled={deletingBusy}
+    >
+      {deletingBusy ? "Deleting…" : "Delete product"}
+    </Button>
+  </div>
+</Dialog>
