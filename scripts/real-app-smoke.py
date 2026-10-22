@@ -6,15 +6,20 @@ shipped binary: webview -> Tauri IPC -> Rust -> SQLite -> drizzle -> UI.
 
 The app is driven the way a screen reader would drive it, so the assertions
 are about what a cashier would actually see: the window title, the sidebar,
-the products loaded from the database, and the totals shown on screen.
+the products loaded from the database, the totals shown on screen, the change
+due on a cash sale and the confirmation that follows it.
 
 The check is non-destructive. It adds one product to the cart, asserts the
-totals, then empties the cart again. It never charges a sale.
+totals, then pays for the sale with a cash note and reads the sale back out
+of the database. The database is snapshotted before the sale and restored
+afterwards, so the run leaves it exactly as it found it.
 
 Usage:
     python3 scripts/real-app-smoke.py                      # launch the release build
     python3 scripts/real-app-smoke.py --binary path/to/desktop
     python3 scripts/real-app-smoke.py --pid 12345          # attach to a running app
+    python3 scripts/real-app-smoke.py --no-sale            # skip the cash sale
+    python3 scripts/real-app-smoke.py --db path/to/posh.db # database to read
 
 Needs an X or Wayland session with the AT-SPI accessibility bus running
 (at-spi2-core). On GNOME, install `at-spi2-core` and log in over a real
@@ -26,9 +31,13 @@ from __future__ import annotations
 import argparse
 import os
 import re
+import shutil
+import sqlite3
 import subprocess
 import sys
+import tempfile
 import time
+from pathlib import Path
 
 import gi
 
@@ -37,6 +46,10 @@ from gi.repository import Atspi  # noqa: E402
 
 WINDOW_TITLE = "Posh — Point of Sale"
 SIDEBAR_LINKS = ("Terminal", "Products", "Orders", "Settings")
+
+# Tauri puts the app data in `<data dir>/<identifier>` on Linux.
+APP_DIR_NAME = "app.poshq"
+DB_FILE_NAME = "posh.db"
 
 
 # --- accessibility helpers -------------------------------------------------
@@ -131,6 +144,20 @@ class App:
                 best = text
         return best
 
+    def has_text(self, needle: str) -> bool:
+        """Whether any node carries `needle` in its name or its text.
+
+        Toasts live in their own section, which `body_text` ignores, so this
+        searches every node instead.
+        """
+        target = flat(needle)
+        for node, _ in self.nodes():
+            if target in flat(self.name_of(node)):
+                return True
+            if target in flat(self.text_of(node)):
+                return True
+        return False
+
     def wait_for_ui(self, timeout: float = 20.0) -> bool:
         """Wait for the webview to paint.
 
@@ -155,6 +182,29 @@ class App:
                 values.append(self.text_of(node).strip())
         return dict(zip(terms, values))
 
+    def button(self, matches):
+        """The first button whose accessible name satisfies `matches`."""
+        for node, _ in self.nodes():
+            if node.get_role_name() != "button":
+                continue
+            if matches(app_name := self.name_of(node).strip()):
+                return node, app_name
+        return None, ""
+
+    def type_into(self, name: str, text: str) -> bool:
+        """Type into a labelled text field."""
+        for node, _ in self.nodes():
+            if node.get_role_name() not in ("text", "entry", "editable"):
+                continue
+            if self.name_of(node).strip() != name:
+                continue
+            try:
+                Atspi.EditableText.set_text_contents(node, text)
+            except Exception:
+                return False
+            return True
+        return False
+
 
 # --- money ------------------------------------------------------------------
 
@@ -176,6 +226,91 @@ def to_int(text: str) -> int:
     return int(digits) if digits else 0
 
 
+def format_ugx(amount: int) -> str:
+    """The amount the way the app writes it: ``USh 2,000``.
+
+    ICU separates the currency from the amount with a no-break space, so the
+    separator is spelled out here rather than typed as a plain space.
+    """
+    return f"USh\u00a0{amount:,}"
+
+
+def flat(text: str) -> str:
+    """Collapse every run of whitespace so text split across nodes still matches."""
+    return re.sub(r"\s+", " ", text or "")
+
+
+def till_total(text: str) -> int | None:
+    """The cash in the drawer, as shown in the terminal header."""
+    match = re.search(r"Till\s*USh\s*([\d,]+)", text or "")
+    if not match:
+        return None
+    return int(match.group(1).replace(",", ""))
+
+
+# --- database ---------------------------------------------------------------
+
+
+def resolve_db_path(explicit: str | None) -> Path | None:
+    """Find the database the app writes to."""
+    if explicit:
+        path = Path(explicit).expanduser()
+        return path if path.exists() else None
+    base = os.environ.get("XDG_DATA_HOME") or str(Path.home() / ".local" / "share")
+    path = Path(base) / APP_DIR_NAME / DB_FILE_NAME
+    return path if path.exists() else None
+
+
+def snapshot_database(path: Path) -> Path:
+    """Copy the live database into a consistent snapshot we can put back."""
+    handle, name = tempfile.mkstemp(prefix="posh-smoke-", suffix=".db")
+    os.close(handle)
+    snapshot = Path(name)
+    source = sqlite3.connect(path)
+    target = sqlite3.connect(snapshot)
+    try:
+        source.backup(target)
+    finally:
+        target.close()
+        source.close()
+    return snapshot
+
+
+def restore_database(snapshot: Path, path: Path) -> None:
+    """Put the snapshot back over the live database."""
+    for suffix in ("-wal", "-shm"):
+        sidecar = path.with_name(path.name + suffix)
+        if sidecar.exists():
+            sidecar.unlink()
+    shutil.copyfile(snapshot, path)
+
+
+def read_orders(path: Path) -> dict[str, sqlite3.Row]:
+    """Every order in the database, keyed by id."""
+    connection = sqlite3.connect(path)
+    connection.row_factory = sqlite3.Row
+    try:
+        rows = connection.execute(
+            "SELECT id, order_no, status, subtotal, tax_rate, tax, total,"
+            " payment_method, tendered, change_given, created_at"
+            " FROM orders"
+        ).fetchall()
+    finally:
+        connection.close()
+    return {row["id"]: row for row in rows}
+
+
+def delete_order(path: Path, order_id: str) -> None:
+    """Remove an order and its items — the smoke sale leaves no trace."""
+    connection = sqlite3.connect(path)
+    try:
+        connection.execute("PRAGMA foreign_keys = ON")
+        connection.execute("DELETE FROM orders WHERE id = ?", (order_id,))
+        connection.commit()
+    finally:
+        connection.close()
+
+
 # --- checks -----------------------------------------------------------------
 
 
@@ -189,6 +324,9 @@ class Report:
         print(f"  [{mark}] {label}" + (f" — {detail}" if detail else ""))
         return bool(ok)
 
+    def note(self, label: str, detail: str = "") -> None:
+        print(f"  [note] {label}" + (f" — {detail}" if detail else ""))
+
     @property
     def ok(self) -> bool:
         return all(ok for ok, _, _ in self.checks)
@@ -200,7 +338,146 @@ class Report:
         return f"{len(failed)} of {len(self.checks)} checks failed: " + "; ".join(failed)
 
 
-def run_checks(app: App, report: Report) -> None:
+def quick_notes(app: App) -> list[tuple[int, object]]:
+    """The quick-cash buttons in the payment pad, smallest note first.
+
+    A quick note is a button whose whole accessible name is an amount, so the
+    product tiles — "Rolex Accessories USh 1,500" — are not mistaken for one.
+    """
+    pattern = re.compile(r"^USh\s+([\d,]+)$")
+    notes = []
+    for node, _ in app.nodes():
+        if node.get_role_name() != "button":
+            continue
+        match = pattern.match(app.name_of(node).strip())
+        if match:
+            notes.append((int(match.group(1).replace(",", "")), node))
+    return sorted(notes, key=lambda note: note[0])
+
+
+def run_cash_scenario(
+    app: App,
+    report: Report,
+    db_path: Path | None,
+    total: int,
+    till_before: int | None,
+    keeper: list[Path],
+) -> None:
+    """Pay the sale with a cash note and check what reached the database."""
+    if db_path is None:
+        report.check(False, "database found", "no posh.db — pass --db")
+        return
+
+    before = read_orders(db_path)
+    snapshot = snapshot_database(db_path)
+    keeper.append(snapshot)
+
+    notes = quick_notes(app)
+    covering = [(amount, node) for amount, node in notes if amount >= total]
+    report.note("quick notes offered", ", ".join(format_ugx(amount) for amount, _ in notes))
+
+    if covering:
+        tendered, note_button = covering[0]
+        app.click(note_button)
+    else:
+        # No single note covers the sale — type the amount instead.
+        tendered = total + 1000
+        if not app.type_into("Tendered", str(tendered)):
+            report.check(
+                False,
+                "cash amount entered",
+                f"no note covers {format_ugx(total)} and the field could not be typed into",
+            )
+            return
+
+    change = tendered - total
+    time.sleep(0.5)
+    app = App.find(app.pid)
+
+    readout = f"Change due {format_ugx(change)}"
+    body = app.body_text()
+    report.check(readout in body, "payment pad shows the change due", readout)
+
+    confirm, label = app.button(
+        lambda name: name.startswith("Charge") or name.startswith("Give change")
+    )
+    if confirm is None:
+        report.check(False, "confirm button shows the change", "<no confirm button>")
+        return
+    report.check(
+        label == f"Give change {format_ugx(change)}",
+        "confirm button shows the change",
+        label,
+    )
+
+    app.click(confirm)
+
+    deadline = time.time() + 10
+    row = None
+    while time.time() < deadline:
+        time.sleep(0.4)
+        new = [row for order_id, row in read_orders(db_path).items() if order_id not in before]
+        if new:
+            row = new[-1]
+            break
+    if row is None:
+        report.check(False, "sale reached the database", "no new order appeared")
+        return
+
+    report.check(row["total"] == total, "sale total was stored", f"{row['total']} vs {total}")
+    report.check(
+        row["tendered"] == tendered,
+        "tendered amount was stored",
+        f"{row['tendered']} vs {tendered}",
+    )
+    report.check(
+        row["change_given"] == change,
+        "change given was stored",
+        f"{row['change_given']} vs {change}",
+    )
+    report.check(row["payment_method"] == "cash", "payment method was stored", row["payment_method"])
+    report.check(row["status"] == "completed", "sale is completed", row["status"])
+
+    toast = f"Cash {format_ugx(tendered)} · change {format_ugx(change)}"
+    deadline = time.time() + 3
+    seen = False
+    while time.time() < deadline:
+        app = App.find(app.pid)
+        seen = app.has_text(toast)
+        if seen:
+            break
+        time.sleep(0.3)
+    report.check(seen, "confirmation toast shows the tender and change", toast)
+
+    if till_before is None:
+        report.note("cash drawer total skipped", "the till chip could not be read")
+    else:
+        expected = till_before + total
+        deadline = time.time() + 3
+        after = None
+        while time.time() < deadline:
+            app = App.find(app.pid)
+            after = till_total(app.body_text())
+            if after == expected:
+                break
+            time.sleep(0.3)
+        report.check(
+            after == expected,
+            "cash drawer total grew by the sale",
+            f"{after} vs {expected}",
+        )
+
+    delete_order(db_path, row["id"])
+    report.note("smoke sale removed", row["order_no"])
+
+
+def run_checks(
+    app: App,
+    report: Report,
+    db_path: Path | None,
+    keeper: list[Path],
+    sell: bool = True,
+) -> None:
     if not app.wait_for_ui():
         report.check(False, "webview rendered", "the window never showed any content")
         return
@@ -217,6 +494,9 @@ def run_checks(app: App, report: Report) -> None:
 
     body = app.body_text()
     report.check("Till 01" in body, "register loaded", "Till 01" if "Till 01" in body else "<not found>")
+
+    till_before = till_total(body)
+    report.note("cash drawer starts at", "unread" if till_before is None else str(till_before))
 
     shown = re.search(r"(\d+)\s+shown", body)
     count = int(shown.group(1)) if shown else 0
@@ -256,20 +536,18 @@ def run_checks(app: App, report: Report) -> None:
     report.check(tax == expected_tax, "tax is exclusive and rounded", f"{tax} vs {expected_tax} (rate {rate})")
     report.check(total == subtotal + tax, "total is subtotal plus tax", f"{total} vs {subtotal + tax}")
 
-    charge = next(
-        (node for node, _ in app.nodes() if node.get_role_name() == "button" and app.name_of(node).startswith("Charge")),
-        None,
-    )
+    charge, charge_label = app.button(lambda name: name.startswith("Charge"))
     if charge is None:
         report.check(False, "charge button shows the total", "<no charge button>")
     else:
-        charge_label = app.name_of(charge)
         report.check(to_int(charge_label) == total, "charge button shows the total", charge_label)
 
-    clear = next(
-        (node for node, _ in app.nodes() if node.get_role_name() == "button" and app.name_of(node) == "Clear"),
-        None,
-    )
+    if sell:
+        run_cash_scenario(app, report, db_path, total, till_before, keeper)
+    else:
+        report.note("cash sale skipped", "--no-sale")
+
+    clear, _ = app.button(lambda name: name == "Clear")
     if clear is not None:
         app.click(clear)
         time.sleep(0.5)
@@ -282,6 +560,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary", help="path to the app binary to launch")
     parser.add_argument("--pid", type=int, help="pid of an already running app")
+    parser.add_argument("--db", help="database to read (defaults to the app data dir)")
+    parser.add_argument("--no-sale", action="store_true", help="skip the cash sale")
     parser.add_argument("--timeout", type=float, default=20.0, help="seconds to wait for the app")
     args = parser.parse_args()
 
@@ -303,6 +583,10 @@ def main() -> int:
         process = subprocess.Popen([binary], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         pid = process.pid
 
+    db_path = resolve_db_path(args.db)
+    keeper: list[Path] = []
+    report = Report()
+
     try:
         try:
             app = App.find(pid, timeout=args.timeout)
@@ -310,10 +594,10 @@ def main() -> int:
             print(str(error), file=sys.stderr)
             return 1
 
-        print(f"Driving the app on pid {pid}\n")
-        report = Report()
+        print(f"Driving the app on pid {pid}")
+        print(f"Database: {db_path or '<not found>'}\n")
         try:
-            run_checks(app, report)
+            run_checks(app, report, db_path, keeper, sell=not args.no_sale)
         except Exception as error:  # noqa: BLE001 - the report is the result
             report.check(False, "smoke test completed", str(error))
 
@@ -327,6 +611,18 @@ def main() -> int:
                 process.wait(timeout=10)
             except subprocess.TimeoutExpired:
                 process.kill()
+
+            # The sale was written to the live database; put it back the way it
+            # was. Only safe once the app we launched has let go of the file.
+            if db_path is not None:
+                for snapshot in keeper:
+                    restore_database(snapshot, db_path)
+                    print(f"Database restored from {snapshot}")
+
+        # With --pid the database is put back by deleting the sale, so the
+        # snapshots are only ever scratch space.
+        for snapshot in keeper:
+            snapshot.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":
