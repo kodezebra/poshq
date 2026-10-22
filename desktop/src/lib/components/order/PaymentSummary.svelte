@@ -23,19 +23,19 @@
 
 {#if compact}
   <span class="flex flex-col gap-0.5">
-    <span class="inline-flex items-center gap-1.5 text-ink-mute">
+    <span class="inline-flex items-center gap-1.5">
       {#if method === "cash"}
-        <Banknote class="size-3.5 shrink-0" />
+        <Banknote class="size-3.5 shrink-0 text-ink-mute" />
       {:else}
-        <CreditCard class="size-3.5 shrink-0" />
+        <CreditCard class="size-3.5 shrink-0 text-ink-mute" />
       {/if}
-      {label}
+      <span class="text-ink-mute">{label}</span>
+      <span class="tnum text-ink-secondary">{formatUGX(tendered)}</span>
     </span>
-    {#if method === "cash"}
-      <span class="tnum text-ink-mute-2">Tendered {formatUGX(tendered)}</span>
-      {#if change > 0}
-        <span class="tnum text-ink-mute-2">Change {formatUGX(change)}</span>
-      {/if}
+    {#if method === "cash" && change > 0}
+      <span class="tnum text-caption text-ink-mute-2">
+        Change {formatUGX(change)}
+      </span>
     {/if}
   </span>
 {:else}
