@@ -11,9 +11,8 @@
 
   function isActive(href: string) {
     const path = page.url.pathname;
-    return href === "/dashboard"
-      ? path === "/dashboard"
-      : path === href || path.startsWith(`${href}/`);
+    // "/" would otherwise match every path via the prefix check.
+    return path === href || path.startsWith(`${href}/`);
   }
 </script>
 

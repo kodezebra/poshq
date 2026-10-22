@@ -6,7 +6,7 @@
 <div class="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
   <header>
     <p class="eyebrow text-ink-mute">Register 01</p>
-    <h1 class="mt-1 text-display-lg text-ink">Sales</h1>
+    <h1 class="mt-1 text-display-lg text-ink">Orders</h1>
     <p class="mt-1 text-body-md text-ink-mute">
       Every completed transaction, newest first.
     </p>
@@ -19,7 +19,7 @@
       >
         <Receipt class="size-5" />
       </span>
-      <p class="mt-4 text-heading-sm text-ink">No sales yet</p>
+      <p class="mt-4 text-heading-sm text-ink">No orders yet</p>
       <p class="mt-1 max-w-sm text-body-md text-ink-mute">
         Completed sales will be recorded here with their totals and payment
         method.

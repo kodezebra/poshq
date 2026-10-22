@@ -3,7 +3,7 @@
 </script>
 
 <a
-  href="/dashboard"
+  href="/"
   class="group flex items-center gap-2.5 rounded-sm"
   aria-label="Posh — point of sale"
 >
