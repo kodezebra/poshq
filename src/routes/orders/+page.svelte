@@ -149,7 +149,9 @@
           <td class="whitespace-nowrap px-4 py-3 text-ink-mute">
             {order.itemCount}
             {order.itemCount === 1 ? "line" : "lines"}
-            <span class="text-ink-mute-2">· {order.unitCount} units</span>
+            <span class="text-ink-mute-2">
+              · {order.unitCount} {order.unitCount === 1 ? "unit" : "units"}
+            </span>
           </td>
           <td class="whitespace-nowrap px-4 py-3">
             <OrderStatusBadge status={order.status} />
