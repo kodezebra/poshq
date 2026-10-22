@@ -42,23 +42,25 @@
     {/snippet}
   </DropdownMenu.Trigger>
 
-  <DropdownMenu.Content
-    align="end"
-    sideOffset={6}
-    class="z-50 min-w-44 rounded-lg border border-hairline bg-canvas p-1.5 shadow-elev-2"
-  >
-    {#each items as item (item.label)}
-      <DropdownMenu.Item
-        class={cn(itemClass, item.destructive && "text-ruby data-[highlighted]:text-ruby")}
-        onSelect={item.onselect}
-      >
-        {#if item.icon}
-          <item.icon
-            class={cn("size-4", item.destructive ? "text-ruby" : "text-ink-mute")}
-          />
-        {/if}
-        {item.label}
-      </DropdownMenu.Item>
-    {/each}
-  </DropdownMenu.Content>
+  <DropdownMenu.Portal>
+    <DropdownMenu.Content
+      align="end"
+      sideOffset={6}
+      class="z-50 min-w-44 rounded-lg border border-hairline bg-canvas p-1.5 shadow-elev-2"
+    >
+      {#each items as item (item.label)}
+        <DropdownMenu.Item
+          class={cn(itemClass, item.destructive && "text-ruby data-[highlighted]:text-ruby")}
+          onSelect={item.onselect}
+        >
+          {#if item.icon}
+            <item.icon
+              class={cn("size-4", item.destructive ? "text-ruby" : "text-ink-mute")}
+            />
+          {/if}
+          {item.label}
+        </DropdownMenu.Item>
+      {/each}
+    </DropdownMenu.Content>
+  </DropdownMenu.Portal>
 </DropdownMenu.Root>
