@@ -34,7 +34,7 @@
     ></button>
   {/if}
 
-  <main class="min-h-dvh pt-12 sm:pl-16">
+  <main class="min-h-dvh pt-11 sm:pl-14">
     {@render children()}
   </main>
 </div>

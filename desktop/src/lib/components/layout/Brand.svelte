@@ -8,11 +8,11 @@
   aria-label="Posh — point of sale"
 >
   <span
-    class="flex size-8 items-center justify-center rounded-md bg-primary text-on-primary transition-colors group-hover:bg-primary-deep"
+    class="flex size-7 items-center justify-center rounded-sm bg-chrome-raised text-chrome-ink ring-1 ring-chrome-line ring-inset transition-colors group-hover:text-action-on-chrome"
   >
     <Store class="size-4" />
   </span>
-  <span class="text-heading-sm text-ink">
-    Posh<span class="text-primary">.</span>
+  <span class="text-heading-sm text-chrome-ink">
+    Posh<span class="text-action-on-chrome">.</span>
   </span>
 </a>

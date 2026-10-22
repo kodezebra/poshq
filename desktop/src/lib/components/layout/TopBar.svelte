@@ -9,11 +9,16 @@
   }: { mobileOpen?: boolean; ontoggle: () => void } = $props();
 </script>
 
-<nav class="fixed inset-x-0 top-0 z-50 h-12 border-b border-hairline bg-canvas">
+<!--
+  The dark frame is the product's signature: chrome recedes, the work surface
+  carries the sale. 44px is enough for the wordmark and identity without
+  stealing a row from the register at 1366×768.
+-->
+<nav class="fixed inset-x-0 top-0 z-50 h-11 border-b border-chrome-line bg-chrome">
   <div class="flex h-full items-center gap-3 px-3">
     <button
       type="button"
-      class="inline-flex size-8 items-center justify-center rounded-md text-ink-secondary transition-colors hover:bg-canvas-soft hover:text-ink sm:hidden"
+      class="inline-flex size-8 items-center justify-center rounded-sm text-chrome-ink transition-colors hover:bg-chrome-raised sm:hidden"
       aria-controls="app-sidebar"
       aria-expanded={mobileOpen}
       aria-label={mobileOpen ? "Close navigation" : "Open navigation"}

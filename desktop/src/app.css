@@ -54,6 +54,12 @@
   --color-info: #475569; /* 7.26:1 — deliberately neutral */
   --color-ruby: #b42318; /* legacy alias for danger */
 
+  /* State on the dark frame needs its own lightness: the work-surface greens
+   * sit around 2:1 against chrome, which is not a readable indicator. */
+  --color-success-chrome: #3dd68c;
+  --color-danger-chrome: #ff9b8f;
+  --color-warn-chrome: #f5b544;
+
   /* ---- Type family --------------------------------------------------- */
   --font-sans: "Archivo Variable", "Archivo", ui-sans-serif, system-ui,
     -apple-system, sans-serif;

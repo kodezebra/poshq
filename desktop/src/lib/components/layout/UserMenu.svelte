@@ -18,15 +18,15 @@
     {#snippet child({ props })}
       <button
         {...props}
-        class="flex items-center gap-1.5 rounded-pill p-1 pe-1 transition-colors hover:bg-canvas-soft"
+        class="flex items-center gap-1.5 rounded-sm p-1 transition-colors hover:bg-chrome-raised"
         aria-label="Open account menu"
       >
         <span
-          class="flex size-7 items-center justify-center rounded-full bg-brand-dark text-[10px] tracking-wide text-on-primary"
+          class="flex size-7 items-center justify-center rounded-sm bg-chrome-raised text-[10px] tracking-wide text-chrome-ink ring-1 ring-chrome-line ring-inset"
         >
           {user.initials}
         </span>
-        <ChevronDown class="size-3.5 text-ink-mute" />
+        <ChevronDown class="size-3.5 text-chrome-mute" />
       </button>
     {/snippet}
   </DropdownMenu.Trigger>
