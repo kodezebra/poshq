@@ -30,3 +30,7 @@ vite.config.ts.timestamp-*
 
 # Local verification artifacts
 .playwright-mcp
+
+# Python
+__pycache__/
+*.pyc
