@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Receipt, RefreshCw, SearchX } from "@lucide/svelte";
+  import { ChevronRight, Receipt, RefreshCw, SearchX } from "@lucide/svelte";
   import Button from "$lib/components/button/Button.svelte";
   import Input from "$lib/components/input/Input.svelte";
   import OrderStatusBadge from "$lib/components/order/OrderStatusBadge.svelte";
@@ -130,12 +130,18 @@
         "VAT",
         "Total",
         "Payment",
+        "",
       ]}
     >
       {#each rows as order (order.id)}
         <tr class="group transition-colors hover:bg-canvas-soft">
-          <td class="text-body-tabular whitespace-nowrap px-4 py-3 text-ink">
-            {order.orderNo}
+          <td class="whitespace-nowrap px-4 py-3">
+            <a
+              href="/orders/{order.id}"
+              class="text-body-tabular text-primary underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              {order.orderNo}
+            </a>
           </td>
           <td class="whitespace-nowrap px-4 py-3 text-ink-mute">
             {formatDateTime(order.createdAt)}
@@ -160,6 +166,15 @@
           </td>
           <td class="whitespace-nowrap px-4 py-3 capitalize text-ink-mute">
             {order.paymentMethod}
+          </td>
+          <td class="px-2 py-3 text-right">
+            <a
+              href="/orders/{order.id}"
+              aria-label={`Open ${order.orderNo}`}
+              class="inline-flex items-center text-ink-mute transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              <ChevronRight class="size-4" />
+            </a>
           </td>
         </tr>
       {/each}

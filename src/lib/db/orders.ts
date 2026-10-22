@@ -3,7 +3,7 @@ import type { CartLine } from "$lib/stores/cart.svelte";
 import type { VatRate } from "$lib/utils";
 import { db } from "./client";
 import { friendlyError } from "./errors";
-import { orderItems, orders, type Order } from "./schema";
+import { orderItems, orders, type Order, type OrderItem } from "./schema";
 
 export type PaymentMethod = "cash" | "card";
 export type OrderStatus = "completed" | "void";
@@ -109,6 +109,11 @@ export type OrderFilter = {
   limit?: number;
 };
 
+export type OrderWithItems = {
+  order: Order;
+  items: OrderItem[];
+};
+
 /** Orders newest first, optionally filtered by status and order number. */
 export async function listOrders({
   search = "",
@@ -151,4 +156,44 @@ export async function listOrders({
       unitCount: count?.unitCount ?? 0,
     };
   });
+}
+
+/** One order with its item snapshots. */
+export async function getOrder(
+  id: string,
+): Promise<OrderWithItems | undefined> {
+  const order = await db.select().from(orders).where(eq(orders.id, id)).get();
+  if (!order) return undefined;
+
+  const items = await db
+    .select()
+    .from(orderItems)
+    .where(eq(orderItems.orderId, id))
+    .orderBy(orderItems.id);
+
+  return { order, items };
+}
+
+/**
+ * Mark an order as void. The order and its items are kept — a void is an
+ * audit record, not a deletion.
+ */
+export async function voidOrder(id: string): Promise<void> {
+  try {
+    await db
+      .update(orders)
+      .set({ status: "void", voidedAt: sql`(unixepoch() * 1000)` })
+      .where(eq(orders.id, id));
+  } catch (cause) {
+    throw friendlyError(cause);
+  }
+}
+
+/** Remove an order and its items (cascade). */
+export async function deleteOrder(id: string): Promise<void> {
+  try {
+    await db.delete(orders).where(eq(orders.id, id));
+  } catch (cause) {
+    throw friendlyError(cause);
+  }
 }
