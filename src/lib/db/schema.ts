@@ -54,6 +54,10 @@ export const orders = sqliteTable(
     paymentMethod: text("payment_method", { enum: ["cash", "card"] })
       .notNull()
       .default("cash"),
+    /** What the customer handed over. For a card payment this equals `total`. */
+    tendered: integer("tendered").notNull().default(0),
+    /** Change handed back from the till. Always 0 for a card payment. */
+    changeGiven: integer("change_given").notNull().default(0),
     createdAt: timestamp("created_at"),
     voidedAt: integer("voided_at"),
   },

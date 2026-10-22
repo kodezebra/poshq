@@ -4,7 +4,10 @@ use tauri::{AppHandle, Manager};
 
 /// One embedded SQL file per `user_version`. Adding a migration means running
 /// `bunx drizzle-kit generate` and appending the new file here.
-const MIGRATIONS: &[&str] = &[include_str!("../migrations/0000_init.sql")];
+const MIGRATIONS: &[&str] = &[
+    include_str!("../migrations/0000_init.sql"),
+    include_str!("../migrations/0001_cash_handling.sql"),
+];
 
 const STATEMENT_BREAKPOINT: &str = "--> statement-breakpoint";
 
@@ -38,11 +41,18 @@ pub fn init(app: &AppHandle) -> Result<Db, String> {
 }
 
 pub(crate) fn migrate(conn: &mut Connection) -> Result<(), String> {
+    migrate_from(conn, MIGRATIONS)
+}
+
+/// Apply the given migrations in order, skipping the ones already recorded in
+/// `PRAGMA user_version`. `migrations` is always the full list, so a version
+/// number means the same thing as its position in that list.
+fn migrate_from(conn: &mut Connection, migrations: &[&str]) -> Result<(), String> {
     let current: i64 = conn
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .map_err(|error| format!("cannot read schema version: {error}"))?;
 
-    for (index, sql) in MIGRATIONS.iter().enumerate().skip(current as usize) {
+    for (index, sql) in migrations.iter().enumerate().skip(current as usize) {
         let version = (index + 1) as i64;
         let tx = conn
             .transaction()
@@ -128,6 +138,36 @@ mod tests {
     fn migrations_are_idempotent() {
         let mut conn = memory_db();
         migrate(&mut conn).expect("second migrate is a no-op");
+    }
+
+    #[test]
+    fn cash_handling_migration_backfills_legacy_orders() {
+        let mut conn = Connection::open_in_memory().expect("open memory db");
+        conn.execute_batch("PRAGMA foreign_keys = ON;")
+            .expect("enable foreign keys");
+
+        // Bring the schema up to the version before cash handling.
+        migrate_from(&mut conn, &MIGRATIONS[..1]).expect("first migration");
+        conn.execute(
+            "INSERT INTO orders (id, order_no, subtotal, tax_rate, tax, total)
+             VALUES ('o1', 'POS-20261022-0001', 1000, 18, 180, 1180)",
+            [],
+        )
+        .expect("insert legacy order");
+
+        migrate_from(&mut conn, MIGRATIONS).expect("cash handling migration");
+
+        let (tendered, change): (i64, i64) = conn
+            .query_row(
+                "SELECT tendered, change_given FROM orders WHERE id = 'o1'",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .expect("read cash columns");
+
+        // A legacy sale was settled at exactly its total.
+        assert_eq!(tendered, 1180);
+        assert_eq!(change, 0);
     }
 
     #[test]

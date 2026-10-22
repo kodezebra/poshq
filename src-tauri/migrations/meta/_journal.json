@@ -8,6 +8,13 @@
       "when": 1792632650771,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1792654532383,
+      "tag": "0001_cash_handling",
+      "breakpoints": true
     }
   ]
 }
