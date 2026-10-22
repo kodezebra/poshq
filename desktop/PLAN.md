@@ -148,6 +148,40 @@ proof that a sale was actually paid for in full.
 6. `feat(orders): show tendered and change in the history`
 7. `test(app): cover cash and change in the real-app smoke test`
 
+## M8 — Interface density
+
+The register spent too much of the window on chrome: a 56px top bar, a 256px
+sidebar with a register card, and spacious page headers and tables. On a
+1366×768 till that left little room for products. This pass tightens the shell
+and every list surface without hiding information or shrinking tap targets
+below the comfortable range.
+
+- [x] Shell: 48px top bar, 64px icon rail (the mobile drawer keeps its labels),
+      `dvh` heights, compact page headers and empty states
+- [x] Terminal: inline search/category/till header, auto-fill product grid,
+      two-step cart → payment view so cart lines keep their height
+- [x] Cart lines: one row per line with stepper, line total and remove
+- [x] Catalog: compact list by default, grid toggle, per-row action menu
+      (`ActionMenu`, built on bits-ui)
+- [x] Orders: one Total column with a VAT note, whole-row links, a back button
+      and sticky summary on the detail page
+- [x] Settings: choosing a rate saves it, as a segmented control with a
+      keyboard focus ring
+- [x] `bun run check`, `bunx vitest run` (45 tests),
+      `bun run tauri build --no-bundle`
+- [x] Real-app smoke test against the release binary: 18 checks passed,
+      including the cash pad's "Give change" confirm label
+
+**Commits:**
+1. `feat(layout): compact the shell to a top bar and icon rail`
+2. `feat(terminal): tighten the register and split cart from payment`
+3. `feat(catalog): add a compact list view and row actions`
+4. `feat(orders): condense the history and detail views`
+5. `feat(settings): save the VAT rate on choose`
+6. `test(app): cover the compact interface in the smoke test`
+7. `docs(plan): record M8 interface density`
+8. `feat(orders): compact the payment summary cell`
+
 ---
 
 ## Milestone gates
@@ -161,6 +195,7 @@ proof that a sale was actually paid for in full.
 | M5 | Order history is auditable; void never deletes silently |
 | M6 | Green checks, QA script passes, docs accurate |
 | M7 | A cash sale stores what was tendered and the change given back; a short sale cannot be completed; the drawer total matches the sales behind it |
+| M8 | The register fits a 1366×768 till without scrolling for the common case; cart, catalog and order rows stay readable; every control keeps a keyboard focus ring |
 
 ## Out of scope for v1
 
