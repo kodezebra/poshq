@@ -8,18 +8,41 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatCurrency(amount: number, currency: string = "USD"): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount)
+/** VAT is a whole percentage; the register only trades at 0% or 18%. */
+export const VAT_RATES = [0, 18] as const
+export type VatRate = (typeof VAT_RATES)[number]
+export const DEFAULT_VAT_RATE: VatRate = 18
+
+const ugx = new Intl.NumberFormat("en-UG", {
+  style: "currency",
+  currency: "UGX",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+})
+
+/**
+ * Format whole Ugandan shillings. UGX has no minor unit, so values are
+ * rounded to the nearest shilling before display.
+ */
+export function formatUGX(amount: number): string {
+  return ugx.format(Math.round(amount))
 }
 
-export function formatDate(date: Date | string): string {
-  const d = typeof date === "string" ? new Date(date) : date
-  return d.toLocaleDateString("en-US", {
+/**
+ * Read a shilling amount from free text: accepts `5,000`, `UGX 5000` and
+ * pasted currency strings. Returns 0 when there are no digits.
+ */
+export function parseUGX(input: string): number {
+  const digits = input.replace(/[^\d]/g, "")
+  if (!digits) return 0
+
+  const value = Number.parseInt(digits, 10)
+  return Number.isSafeInteger(value) ? value : 0
+}
+
+export function formatDate(value: Date | string | number): string {
+  const date = value instanceof Date ? value : new Date(value)
+  return date.toLocaleDateString("en-GB", {
     year: "numeric",
     month: "short",
     day: "numeric",

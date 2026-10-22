@@ -44,17 +44,17 @@ Currency: **UGX** — whole shillings only (no minor unit). VAT: **0% or 18%**, 
 
 ## M2 — Catalog read path
 
-- [ ] `utils.ts`: `formatUGX()` (`en-UG`, 0 decimals), `parseUGX()` (accepts `5,000`), `VAT_RATES = [0, 18]` with `"18"` default, keep `cn`
-- [ ] `src/lib/db/products.ts`: `listProducts({ search })`, `getProduct(id)` — search via drizzle `like`/`or` on name + sku + category
-- [ ] Rewrite `/products` to read from DB; debounced search; loading + empty states
-- [ ] Update `ProductCard` to render `formatUGX(product.price)`
-- [ ] Delete `src/lib/data/products.ts`
+- [x] `utils.ts`: `formatUGX()` (`en-UG`, 0 decimals), `parseUGX()` (accepts `5,000`), `VAT_RATES = [0, 18]` with `"18"` default, keep `cn`
+- [x] `src/lib/db/products.ts`: `listProducts({ search })`, `getProduct(id)` — search via drizzle `like`/`or` on name + sku + category
+- [x] Rewrite `/products` to read from DB; debounced search; loading + empty states
+- [x] Update `ProductCard` to render `formatUGX(product.price)`
+- [ ] Delete `src/lib/data/products.ts` — deferred to M3, where the dashboard placeholder (its last consumer) is removed
 
 **Commit:** `feat(catalog): read products from sqlite via drizzle with UGX formatting`
 
 ## M3 — Terminal, cart, checkout
 
-- [ ] `refactor(routes)`: remove `/dashboard` prefix; `/` Terminal, `/products`, `/orders`, `/settings`; update `navigation.ts`
+- [ ] `refactor(routes)`: remove `/dashboard` prefix; `/` Terminal, `/products`, `/orders`, `/settings`; update `navigation.ts`; delete `src/lib/data/products.ts` and `src/lib/types.ts` with the old dashboard
 - [ ] `src/lib/stores/cart.svelte.ts`: `add/remove/setQty/clear`, derived `subtotal`, `tax`, `total`; tax uses the loaded `vat_rate`
 - [ ] `src/lib/db/settings.ts`: `getVatRate()`, `setVatRate(0 | 18)`
 - [ ] Components: `ProductTile`, `TerminalGrid`, `CartPanel`, `CartLine`, `OrderTotals`

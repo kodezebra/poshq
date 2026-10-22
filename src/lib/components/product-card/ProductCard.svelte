@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Package, Tag } from "@lucide/svelte";
-  import { cn } from "$lib/utils";
-  import type { Product } from "$lib/types";
+  import { cn, formatUGX } from "$lib/utils";
+  import type { Product } from "$lib/db/schema";
 
   let {
     product,
@@ -16,9 +16,9 @@
   )}
 >
   <div class="aspect-[16/10] w-full overflow-hidden bg-canvas-soft">
-    {#if product.image}
+    {#if product.imageUrl}
       <img
-        src={product.image}
+        src={product.imageUrl}
         alt={product.name}
         class="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
       />
@@ -32,7 +32,9 @@
   <div class="flex flex-1 flex-col gap-1.5 p-4">
     <div class="flex items-start justify-between gap-2">
       <h3 class="line-clamp-1 text-body-md text-ink">{product.name}</h3>
-      <span class="tnum shrink-0 text-body-md text-ink">{product.price}</span>
+      <span class="tnum shrink-0 text-body-md text-ink">
+        {formatUGX(product.price)}
+      </span>
     </div>
     <div class="flex items-center gap-1.5 text-caption text-ink-mute">
       <Tag class="size-3.5" />
