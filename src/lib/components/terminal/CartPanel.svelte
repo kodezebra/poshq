@@ -1,15 +1,19 @@
 <script lang="ts">
   import { ShoppingBasket } from "@lucide/svelte";
   import Button from "$lib/components/button/Button.svelte";
+  import type { PaymentMethod } from "$lib/payment";
   import { cart } from "$lib/stores/cart.svelte";
-  import { formatUGX } from "$lib/utils";
   import CartLine from "./CartLine.svelte";
   import OrderTotals from "./OrderTotals.svelte";
+  import PaymentPad from "./PaymentPad.svelte";
 
   let {
     oncharge,
     charging = false,
-  }: { oncharge?: () => void; charging?: boolean } = $props();
+  }: {
+    oncharge?: (payment: { method: PaymentMethod; tendered: number }) => void;
+    charging?: boolean;
+  } = $props();
 </script>
 
 <div class="flex h-full min-h-0 flex-col">
@@ -62,14 +66,18 @@
       total={cart.total}
     />
 
-    {#if oncharge}
-      <Button
-        class="mt-4 w-full"
-        disabled={cart.isEmpty || charging}
-        onclick={oncharge}
-      >
-        {charging ? "Charging…" : `Charge ${formatUGX(cart.total)}`}
-      </Button>
+    <!--
+      The pad lives with the cart so its state dies with the sale: once the
+      cart is empty the pad is gone, and the next sale starts from scratch.
+    -->
+    {#if !cart.isEmpty && oncharge}
+      <div class="mt-4">
+        <PaymentPad
+          total={cart.total}
+          {charging}
+          onconfirm={(payment) => oncharge(payment)}
+        />
+      </div>
     {/if}
   </footer>
 </div>

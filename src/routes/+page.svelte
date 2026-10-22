@@ -1,15 +1,16 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { PackageSearch, RefreshCw, SearchX } from "@lucide/svelte";
+  import { PackageSearch, RefreshCw, SearchX, Wallet } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
   import Button from "$lib/components/button/Button.svelte";
   import Input from "$lib/components/input/Input.svelte";
   import CartPanel from "$lib/components/terminal/CartPanel.svelte";
   import TerminalGrid from "$lib/components/terminal/TerminalGrid.svelte";
   import type { Product } from "$lib/db/schema";
-  import { createOrder } from "$lib/db/orders";
+  import { createOrder, getCashSummary } from "$lib/db/orders";
   import { listProducts } from "$lib/db/products";
   import { getVatRate } from "$lib/db/settings";
+  import type { PaymentMethod } from "$lib/payment";
   import { cart } from "$lib/stores/cart.svelte";
   import { cn, errorMessage, formatUGX } from "$lib/utils";
 
@@ -23,9 +24,19 @@
   let loading = $state(true);
   let error = $state<string | null>(null);
   let charging = $state(false);
+  let till = $state({ inDrawer: 0, sales: 0 });
   let reloadKey = $state(0);
 
   const focusSearch = () => document.getElementById(SEARCH_ID)?.focus();
+
+  /** What the drawer should hold for the day so far. */
+  async function refreshTill() {
+    try {
+      till = await getCashSummary();
+    } catch (cause) {
+      console.error("load till", cause);
+    }
+  }
 
   onMount(() => {
     focusSearch();
@@ -33,6 +44,8 @@
     getVatRate()
       .then((rate) => cart.setVatRate(rate))
       .catch((cause) => console.error("load vat rate", cause));
+
+    void refreshTill();
 
     listProducts()
       .then((rows) => {
@@ -94,7 +107,10 @@
     focusSearch();
   }
 
-  async function charge() {
+  async function charge(payment: {
+    method: PaymentMethod;
+    tendered: number;
+  }) {
     if (cart.isEmpty || charging) return;
     charging = true;
 
@@ -102,18 +118,23 @@
       const order = await createOrder({
         lines: [...cart.lines],
         vatRate: cart.vatRate,
+        paymentMethod: payment.method,
+        tendered: payment.tendered,
       });
 
+      const paid = order.paymentMethod === "card" ? "Card" : "Cash";
       toast.success(`Order ${order.orderNo} charged`, {
-        description: `${formatUGX(order.total)} · ${cart.count} ${
-          cart.count === 1 ? "item" : "items"
-        }`,
+        description:
+          order.change > 0
+            ? `${paid} ${formatUGX(order.tendered)} · change ${formatUGX(order.change)}`
+            : `${paid} ${formatUGX(order.tendered)}`,
       });
 
       cart.clear();
       search = "";
       query = "";
       focusSearch();
+      void refreshTill();
     } catch (cause) {
       toast.error("Could not complete the sale", {
         description: errorMessage(cause),
@@ -138,6 +159,14 @@
             placeholder="Scan or search products…"
             aria-label="Scan or search products"
           />
+        </div>
+        <div
+          class="flex items-center gap-2 rounded-pill border border-hairline px-3 py-1.5"
+          title="Cash in the drawer today"
+        >
+          <Wallet class="size-4 text-ink-mute" />
+          <span class="text-caption text-ink-secondary">Till</span>
+          <span class="tnum text-button-sm text-ink">{formatUGX(till.inDrawer)}</span>
         </div>
         <p class="text-caption text-ink-mute" aria-live="polite">
           {loading ? "Loading…" : `${products.length} shown`}

@@ -23,6 +23,8 @@ export type CheckoutResult = {
   subtotal: number;
   tax: number;
   total: number;
+  /** How the sale was paid for. */
+  paymentMethod: PaymentMethod;
   /** What was handed over. */
   tendered: number;
   /** Change given back from the till. */
@@ -113,6 +115,7 @@ export async function createOrder({
     subtotal,
     tax,
     total,
+    paymentMethod: payment.method,
     tendered: payment.tendered,
     change: payment.change,
   };
