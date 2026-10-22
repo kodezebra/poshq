@@ -61,7 +61,7 @@ Currency: **UGX** — whole shillings only (no minor unit). VAT: **0% or 18%**, 
 - [ ] Terminal layout: search + category filter + grid (left), cart + Charge (right); Enter adds first match (scanner-friendly)
 - [ ] `src/lib/db/orders.ts`: `createOrder()` via `db.batch([order, ...items])`, snapshots `tax_rate`, `order_no` `POS-YYYYMMDD-####`
 - [ ] Charge → atomic insert → toast → cart reset
-- [ ] `/settings`: VAT select (`0%` / `18%`) persisted via `settings`; changing it recalculates the open cart only — completed orders keep their snapshot
+- [x] `/settings`: VAT select (`0%` / `18%`) persisted via `settings`; changing it recalculates the open cart only — completed orders keep their snapshot
 
 **Commits:**
 1. `refactor(routes): land on terminal and flatten dashboard routes`
