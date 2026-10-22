@@ -17,15 +17,19 @@
     className,
   )}
 >
-  {#if product.imageUrl}
-    <div class="aspect-[16/10] w-full overflow-hidden bg-canvas-soft">
+  <div class="flex h-20 w-full items-center justify-center overflow-hidden bg-canvas-soft">
+    {#if product.imageUrl}
       <img
         src={product.imageUrl}
         alt={product.name}
         class="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
       />
-    </div>
-  {/if}
+    {:else}
+      <span class="text-body-lg text-ink-mute-2" aria-hidden="true">
+        {product.name.charAt(0)}
+      </span>
+    {/if}
+  </div>
 
   <div class="flex flex-1 flex-col gap-1 p-3">
     <div class="flex items-start justify-between gap-2">
