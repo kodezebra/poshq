@@ -158,6 +158,7 @@ below the comfortable range.
 
 - [x] Shell: 48px top bar, 64px icon rail (the mobile drawer keeps its labels),
       `dvh` heights, compact page headers and empty states
+      *(superseded by M9: the frame is now 44/56)*
 - [x] Terminal: inline search/category/till header, auto-fill product grid,
       two-step cart → payment view so cart lines keep their height
 - [x] Cart lines: one row per line with stepper, line total and remove
@@ -182,6 +183,50 @@ below the comfortable range.
 7. `docs(plan): record M8 interface density`
 8. `feat(orders): compact the payment summary cell`
 
+## M9 — The Instrument
+
+M8 made the app dense. Density without a system reads as cramped: the palette
+carried three competing accents, body copy sat at weight 300, and a 1.27:1
+hairline was the only border, so controls did not look operable. This pass
+replaces the Stripi tokens with a measured system and restyles the surfaces
+that carry money.
+
+The direction is `DESIGN-instrument.md`: dark chrome, a warm paper work
+surface, one filled action, state as a dot plus a word, and money as the
+largest thing on screen.
+
+- [x] Tokens: ultramarine action at 8.29:1, danger/success/warn/info measured,
+      chrome-context state lightness, decorative vs control borders
+- [x] Type: Archivo and JetBrains Mono, minimum weight 400, tabular numerals
+- [x] Frame: 44px dark top bar, 56px rail with a 2px active bar
+- [x] Controls: 6px rectangles, neutral secondary, no pills outside status dots
+- [x] Terminal: 32px hero total over a rule, `Charge` as the only filled
+      action at 44px, payment pad with `Amount due` and a 44px commit
+- [x] Orders: sticky header under the chrome bar, sortable columns with
+      `aria-sort`, right-aligned money and counts, mono order numbers
+- [x] Fixed: 4.29:1 `ruby`, 4.49:1 muted text, 300-weight body, the invisible
+      focus on a product row, 28px filter chips
+- [x] `bun run check`, `bunx vitest run` (52 tests),
+      `bun run tauri build --no-bundle`
+- [x] Real-app smoke test against the release binary: 18 checks passed
+- [x] Sorting verified on the running app: date descending by default,
+      Order ascends `POS-20261022-0001` → `POS-20261023-0001`, Total reverses
+
+**Commits:**
+1. `feat(design): adopt the instrument palette and Archivo`
+2. `feat(layout): frame the app in dark chrome`
+3. `style(ui): square the controls and neutralise secondary`
+4. `style(terminal): make the total the hero of the sale`
+5. `feat(orders): make the table a working instrument`
+6. `refactor(tokens): put the quiet text step in its right place`
+7. `fix(till): bring the category chips up to control height`
+8. `fix(products): show focus when a product row is reached by keyboard`
+9. `docs(design): record the instrument system`
+
+Not in this milestone, because the state does not exist yet: a status strip
+(no operator or shift model), receipts (printing is out of scope for v1), and
+offline trading (no queue).
+
 ---
 
 ## Milestone gates
@@ -196,6 +241,7 @@ below the comfortable range.
 | M6 | Green checks, QA script passes, docs accurate |
 | M7 | A cash sale stores what was tendered and the change given back; a short sale cannot be completed; the drawer total matches the sales behind it |
 | M8 | The register fits a 1366×768 till without scrolling for the common case; cart, catalog and order rows stay readable; every control keeps a keyboard focus ring |
+| M9 | Every text and control pair meets WCAG AA on its own surface; one filled action per surface; the till's total is the largest figure at 1366×768; tables sort with `aria-sort` and keep their header; smoke stays green |
 
 ## Out of scope for v1
 
