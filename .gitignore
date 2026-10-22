@@ -27,3 +27,6 @@ vite.config.ts.timestamp-*
 # Editors
 .idea
 *.local
+
+# Local verification artifacts
+.playwright-mcp

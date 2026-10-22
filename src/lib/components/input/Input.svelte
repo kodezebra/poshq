@@ -1,11 +1,25 @@
 <script lang="ts">
-  import { cn } from "@/lib/utils";
+  import { cn } from "$lib/utils";
+
+  let {
+    value = $bindable(""),
+    class: className,
+    ...rest
+  }: {
+    value?: string;
+    class?: string;
+    [key: string]: unknown;
+  } = $props();
 </script>
 
-<input 
+<input
+  bind:value
   class={cn(
-    "flex-1 rounded-border border-border bg-input px-3 py-2 text-sm placeholder-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
-    "disabled:opacity-50 cursor-not-allowed"
+    "h-10 w-full rounded-sm border border-hairline-input bg-canvas px-3 text-body-md text-ink outline-none",
+    "transition-[border-color,box-shadow] placeholder:text-ink-mute",
+    "focus:border-primary focus:ring-2 focus:ring-primary/15",
+    "disabled:cursor-not-allowed disabled:bg-canvas-soft disabled:opacity-60",
+    className,
   )}
-  placeholder="Search..."
+  {...rest}
 />

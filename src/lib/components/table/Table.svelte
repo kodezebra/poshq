@@ -1,23 +1,40 @@
 <script lang="ts">
-  import { cn } from "@/lib/utils";
+  import { cn } from "$lib/utils";
+  import type { Snippet } from "svelte";
+
+  let {
+    headers,
+    children,
+    class: className,
+  }: {
+    /** Column labels, rendered left-aligned (RTL-aware). */
+    headers: string[];
+    /** `<tr>` rows. Use `td` with the `tnum` class for money values. */
+    children: Snippet;
+    class?: string;
+  } = $props();
 </script>
 
-<table class={cn("w-full rounded-md border-border text-sm")}>
-  <thead>
-    <tr class={cn("border-b border-border bg-card")}>
-      {#each headers as header}
-      <th class="p-3 text-left text-muted-foreground font-medium">{@html header}</th>
-      {/each}
-    </tr>
-  </thead>
-
-  <tbody>
-    {#each rows as row (row.id)}
-    <tr class={cn("border-b border-border/50 odd:bg-card even:bg-muted/50")}>
-      {#each row.cells as cell}
-      <td class="p-3">{@html cell}</td>
-      {/each}
-    </tr>
-    {/each}
-  </tbody>
-</table>
+<div
+  class={cn(
+    "overflow-x-auto rounded-lg border border-hairline bg-canvas",
+    className,
+  )}
+>
+  <table class="w-full border-collapse text-body-tabular">
+    <thead>
+      <tr class="border-b border-hairline">
+        {#each headers as header}
+          <th
+            class="whitespace-nowrap px-4 py-3 text-start text-caption font-normal text-ink-mute"
+          >
+            {header}
+          </th>
+        {/each}
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-hairline">
+      {@render children()}
+    </tbody>
+  </table>
+</div>
