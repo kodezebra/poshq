@@ -5,6 +5,7 @@
   import OrderStatusBadge from "$lib/components/order/OrderStatusBadge.svelte";
   import PaymentSummary from "$lib/components/order/PaymentSummary.svelte";
   import Table from "$lib/components/table/Table.svelte";
+  import type { TableColumn, TableSort } from "$lib/components/table/types";
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
   import PageHeader from "$lib/components/ui/PageHeader.svelte";
   import Select from "$lib/components/ui/Select.svelte";
@@ -13,6 +14,7 @@
     type OrderStatus,
     type OrderSummary,
   } from "$lib/db/orders";
+  import { sortOrders } from "$lib/order-sort";
   import { errorMessage, formatDateTime, formatUGX } from "$lib/utils";
 
   type StatusFilter = OrderStatus | "all";
@@ -23,6 +25,15 @@
     { value: "void", label: "Void" },
   ];
 
+  const COLUMNS: TableColumn[] = [
+    { label: "Order", sortKey: "order" },
+    { label: "Date", sortKey: "date" },
+    { label: "Items", align: "end", sortKey: "items" },
+    { label: "Status" },
+    { label: "Total", align: "end", sortKey: "total" },
+    { label: "Payment" },
+  ];
+
   let search = $state("");
   let query = $state("");
   let status = $state<StatusFilter>("all");
@@ -30,6 +41,21 @@
   let rows = $state<OrderSummary[]>([]);
   let loading = $state(true);
   let error = $state<string | null>(null);
+  let sort = $state<TableSort>({ key: "date", direction: "desc" });
+
+  /**
+   * Re-clicking a column reverses it; a new column opens on the direction that
+   * answers the usual question. Dates and money are asked for newest and
+   * largest first, names and counts ascend.
+   */
+  function toggleSort(key: string) {
+    if (sort?.key === key) {
+      sort = { key, direction: sort.direction === "desc" ? "asc" : "desc" };
+      return;
+    }
+    const descending = key === "date" || key === "total" || key === "items";
+    sort = { key, direction: descending ? "desc" : "asc" };
+  }
 
   // Debounce typing so each keystroke doesn't hit SQLite.
   $effect(() => {
@@ -71,6 +97,9 @@
       .filter((row) => row.status === "completed")
       .reduce((sum, row) => sum + row.total, 0),
   );
+
+  /** The view is fully loaded, so ordering is a local concern. */
+  const sorted = $derived(sortOrders(rows, sort));
 </script>
 
 <div class="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6">
@@ -126,16 +155,13 @@
       aria-busy="true"
     ></div>
   {:else if rows.length}
-    <Table
-      class="mt-4"
-      headers={["Order", "Date", "Items", "Status", "Total", "Payment"]}
-    >
-      {#each rows as order (order.id)}
+    <Table class="mt-4" columns={COLUMNS} {sort} onsort={toggleSort}>
+      {#each sorted as order (order.id)}
         <tr class="relative transition-colors hover:bg-canvas-soft">
           <td class="whitespace-nowrap px-3 py-2">
             <a
               href="/orders/{order.id}"
-              class="text-body-tabular text-primary underline-offset-2 after:absolute after:inset-0 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              class="code text-body-tabular text-primary underline-offset-2 after:absolute after:inset-0 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               {order.orderNo}
             </a>
@@ -143,7 +169,9 @@
           <td class="whitespace-nowrap px-3 py-2 text-ink-mute">
             {formatDateTime(order.createdAt)}
           </td>
-          <td class="whitespace-nowrap px-3 py-2 text-ink-mute">
+          <td
+            class="tnum whitespace-nowrap px-3 py-2 text-end text-ink-mute"
+          >
             {order.itemCount}×
             <span class="text-ink-mute-2">
               · {order.unitCount} {order.unitCount === 1 ? "unit" : "units"}
@@ -152,7 +180,9 @@
           <td class="whitespace-nowrap px-3 py-2">
             <OrderStatusBadge status={order.status} />
           </td>
-          <td class="tnum whitespace-nowrap px-3 py-2 font-medium text-ink">
+          <td
+            class="tnum whitespace-nowrap px-3 py-2 text-end font-medium text-ink"
+          >
             {formatUGX(order.total)}
             <span class="font-normal text-caption text-ink-mute-2">
               VAT {order.taxRate}%

@@ -9,6 +9,7 @@
   import OrderStatusBadge from "$lib/components/order/OrderStatusBadge.svelte";
   import PaymentSummary from "$lib/components/order/PaymentSummary.svelte";
   import Table from "$lib/components/table/Table.svelte";
+  import type { TableColumn } from "$lib/components/table/types";
   import OrderTotals from "$lib/components/terminal/OrderTotals.svelte";
   import Dialog from "$lib/components/ui/Dialog.svelte";
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
@@ -22,6 +23,14 @@
   import { errorMessage, formatDateTime, formatUGX } from "$lib/utils";
 
   const orderId = $derived(page.params.id ?? "");
+
+  const LINE_COLUMNS: TableColumn[] = [
+    { label: "Item" },
+    { label: "Qty", align: "end" },
+    { label: "Unit price", align: "end" },
+    { label: "Line total", align: "end" },
+  ];
+
 
   let record = $state<OrderWithItems | undefined>(undefined);
   let loading = $state(true);
@@ -160,17 +169,23 @@
 
     <div class="mt-4 grid gap-4 lg:grid-cols-3">
       <div class="lg:col-span-2">
-        <Table headers={["Item", "Qty", "Unit price", "Line total"]}>
+        <Table columns={LINE_COLUMNS}>
           {#each items as item (item.id)}
             <tr>
               <td class="px-3 py-2 text-ink">{item.name}</td>
-              <td class="tnum whitespace-nowrap px-3 py-2 text-ink-mute">
+              <td
+                class="tnum whitespace-nowrap px-3 py-2 text-end text-ink-mute"
+              >
                 {item.qty}
               </td>
-              <td class="tnum whitespace-nowrap px-3 py-2 text-ink-secondary">
+              <td
+                class="tnum whitespace-nowrap px-3 py-2 text-end text-ink-secondary"
+              >
                 {formatUGX(item.unitPrice)}
               </td>
-              <td class="tnum whitespace-nowrap px-3 py-2 font-medium text-ink">
+              <td
+                class="tnum whitespace-nowrap px-3 py-2 text-end font-medium text-ink"
+              >
                 {formatUGX(item.lineTotal)}
               </td>
             </tr>
