@@ -54,10 +54,10 @@ Currency: **UGX** — whole shillings only (no minor unit). VAT: **0% or 18%**, 
 
 ## M3 — Terminal, cart, checkout
 
-- [ ] `refactor(routes)`: remove `/dashboard` prefix; `/` Terminal, `/products`, `/orders`, `/settings`; update `navigation.ts`; delete `src/lib/data/products.ts` and `src/lib/types.ts` with the old dashboard
-- [ ] `src/lib/stores/cart.svelte.ts`: `add/remove/setQty/clear`, derived `subtotal`, `tax`, `total`; tax uses the loaded `vat_rate`
-- [ ] `src/lib/db/settings.ts`: `getVatRate()`, `setVatRate(0 | 18)`
-- [ ] Components: `ProductTile`, `TerminalGrid`, `CartPanel`, `CartLine`, `OrderTotals`
+- [x] `refactor(routes)`: remove `/dashboard` prefix; `/` Terminal, `/products`, `/orders`, `/settings`; update `navigation.ts`; delete `src/lib/data/products.ts` and `src/lib/types.ts` with the old dashboard
+- [x] `src/lib/stores/cart.svelte.ts`: `add/remove/setQty/clear`, derived `subtotal`, `tax`, `total`; tax uses the loaded `vat_rate`
+- [x] `src/lib/db/settings.ts`: `getVatRate()`, `setVatRate(0 | 18)`
+- [x] Components: `ProductTile`, `TerminalGrid`, `CartPanel`, `CartLine`, `OrderTotals`
 - [ ] Terminal layout: search + category filter + grid (left), cart + Charge (right); Enter adds first match (scanner-friendly)
 - [ ] `src/lib/db/orders.ts`: `createOrder()` via `db.batch([order, ...items])`, snapshots `tax_rate`, `order_no` `POS-YYYYMMDD-####`
 - [ ] Charge → atomic insert → toast → cart reset

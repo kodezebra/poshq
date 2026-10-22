@@ -5,11 +5,13 @@ import { products, type Product } from "./schema";
 export type ProductFilter = {
   /** Matches name, SKU or category (case-insensitive for ASCII). */
   search?: string;
+  category?: string | null;
 };
 
 /** Active catalog items, alphabetically. */
 export async function listProducts({
   search = "",
+  category = null,
 }: ProductFilter = {}): Promise<Product[]> {
   const term = search.trim();
   const match = term
@@ -19,11 +21,12 @@ export async function listProducts({
         like(products.category, `%${term}%`),
       )
     : undefined;
+  const inCategory = category ? eq(products.category, category) : undefined;
 
   return db
     .select()
     .from(products)
-    .where(and(eq(products.active, true), match))
+    .where(and(eq(products.active, true), match, inCategory))
     .orderBy(asc(products.name));
 }
 
