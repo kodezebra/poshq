@@ -199,7 +199,7 @@
       {/if}
 
       <div
-        class="flex shrink-0 items-center gap-1.5 rounded-pill border border-hairline px-2 py-1"
+        class="ml-auto flex shrink-0 items-center gap-1.5 rounded-pill border border-hairline px-2 py-1"
         title="Cash in the drawer today"
       >
         <Wallet class="size-3.5 text-ink-mute" />
