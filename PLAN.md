@@ -48,7 +48,7 @@ Currency: **UGX** — whole shillings only (no minor unit). VAT: **0% or 18%**, 
 - [x] `src/lib/db/products.ts`: `listProducts({ search })`, `getProduct(id)` — search via drizzle `like`/`or` on name + sku + category
 - [x] Rewrite `/products` to read from DB; debounced search; loading + empty states
 - [x] Update `ProductCard` to render `formatUGX(product.price)`
-- [ ] Delete `src/lib/data/products.ts` — deferred to M3, where the dashboard placeholder (its last consumer) is removed
+- [x] Delete `src/lib/data/products.ts` — deferred to M3, where the dashboard placeholder (its last consumer) is removed
 
 **Commit:** `feat(catalog): read products from sqlite via drizzle with UGX formatting`
 
@@ -71,10 +71,10 @@ Currency: **UGX** — whole shillings only (no minor unit). VAT: **0% or 18%**, 
 
 ## M4 — Products CRUD
 
-- [ ] Primitives: `ui/Dialog` (bits-ui), `Field`, `Select`, `Badge`, `EmptyState`, `PageHeader`
-- [ ] `ProductForm` shared by create + edit; zod validation; UGX price input
-- [ ] `db/products.ts`: `createProduct`, `updateProduct`, `deleteProduct`
-- [ ] `/products`: add/edit dialog, delete confirmation, toasts
+- [x] Primitives: `ui/Dialog` (bits-ui), `Field`, `Select`, `Badge`, `EmptyState`, `PageHeader`
+- [x] `ProductForm` shared by create + edit; zod validation; UGX price input
+- [x] `db/products.ts`: `createProduct`, `updateProduct`, `deleteProduct`
+- [x] `/products`: add/edit dialog, delete confirmation, toasts
 
 **Commits:**
 1. `feat(ui): add form primitives and bits-ui dialog wrapper`
@@ -82,25 +82,29 @@ Currency: **UGX** — whole shillings only (no minor unit). VAT: **0% or 18%**, 
 
 ## M5 — Orders
 
-- [ ] `db/orders.ts`: `listOrders({ search, status })`, `getOrder(id)` with items
-- [ ] `/orders`: table, status filter, search by order no, empty state
-- [ ] `/orders/[id]`: header, items table, UGX totals, payment method
-- [ ] Void (status change) + delete (cascade items) behind confirmation
+- [x] `db/orders.ts`: `listOrders({ search, status })`, `getOrder(id)` with items
+- [x] `/orders`: table, status filter, search by order no, empty state
+- [x] `/orders/[id]`: header, items table, UGX totals, payment method
+- [x] Void (status change) + delete (cascade items) behind confirmation
 
 **Commits:**
 1. `feat(orders): history list with status and search`
 2. `feat(orders): detail view, void and delete`
+3. `fix(db): keep SQL out of user-facing errors` — landed before the two above so the write paths share the plain wording
 
 ## M6 — Hardening & handoff
 
-- [ ] Unified error handling: Rust `Result<_, String>` → toast; no silent failures
+- [x] Unified error handling: Rust `Result<_, String>` → toast; no silent failures
+- [x] Failures shown to a cashier never carry SQL: Rust logs the statement, the UI words the reason plainly
 - [ ] Loading/empty states on every async surface; focus search on Terminal mount
 - [ ] `vitest` for `parseUGX` / `formatUGX` / cart totals at 0% and 18% VAT
 - [ ] README: run, DB location, migration workflow, UGX/VAT notes
 - [ ] QA pass: create → edit → search → add to cart → qty → charge → orders → void → delete
 - [ ] `bun run check`, `cargo clippy -- -D warnings`, `bun run tauri build` smoke
 
-**Commit:** `chore(release): pos v1 polish, tests and docs`
+**Commits:**
+1. `fix(db): keep SQL out of user-facing errors`
+2. `chore(release): pos v1 polish, tests and docs`
 
 ---
 
