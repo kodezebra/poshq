@@ -55,11 +55,11 @@
         aria-pressed={method === option.id}
         onclick={() => choose(option.id)}
         class={cn(
-          "inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-pill px-4 text-button-sm transition-colors",
+          "inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-sm px-4 text-button-sm transition-colors",
           "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
           method === option.id
-            ? "bg-primary text-on-primary"
-            : "border border-hairline-input bg-canvas text-ink-secondary hover:bg-primary/5",
+            ? "border border-primary bg-primary/5 text-primary"
+            : "border border-hairline-input bg-canvas text-ink-secondary hover:bg-canvas-sunken",
         )}
       >
         {#if option.id === "cash"}

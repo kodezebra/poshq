@@ -1,8 +1,9 @@
 import { tv, type VariantProps } from "tailwind-variants";
 
 /**
- * Stripi button system — pill geometry, tight 8/16 padding,
- * indigo primary reserved for the single filled action per surface.
+ * Instrument button system — rectangular 6px controls, one filled action per
+ * surface. Secondary is neutral-outlined rather than accent-outlined so it
+ * never competes with the primary it sits beside.
  */
 export const buttonVariants = tv({
   base: [
@@ -13,17 +14,17 @@ export const buttonVariants = tv({
   variants: {
     variant: {
       primary:
-        "bg-primary text-on-primary hover:bg-primary-deep active:bg-primary-press",
+        "bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-press",
       secondary:
-        "border border-primary bg-canvas text-primary hover:bg-primary/5 active:bg-primary/10",
-      dark: "bg-brand-dark text-on-primary hover:bg-brand-dark/90 active:bg-brand-dark/80",
-      ghost: "text-ink-secondary hover:bg-canvas-soft hover:text-ink",
-      danger: "bg-ruby text-on-primary hover:brightness-95 active:brightness-90",
+        "border border-hairline-input bg-canvas text-ink-secondary hover:bg-canvas-sunken hover:text-ink active:bg-canvas-sunken",
+      dark: "bg-chrome text-chrome-ink hover:bg-chrome-raised active:bg-chrome",
+      ghost: "text-ink-secondary hover:bg-canvas-sunken hover:text-ink",
+      danger: "bg-danger text-on-primary hover:brightness-95 active:brightness-90",
     },
     size: {
-      sm: "h-9 rounded-pill px-4 text-button-sm",
-      md: "h-10 rounded-pill px-4 text-button-md",
-      icon: "size-9 rounded-md",
+      sm: "h-8 rounded-sm px-3 text-button-sm",
+      md: "h-9 rounded-sm px-4 text-button-md",
+      icon: "size-8 rounded-sm",
     },
   },
   defaultVariants: {
