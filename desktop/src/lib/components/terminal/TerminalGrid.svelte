@@ -8,7 +8,7 @@
   }: { products: Product[]; onpick: (product: Product) => void } = $props();
 </script>
 
-<ul class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+<ul class="grid grid-cols-[repeat(auto-fill,minmax(10.5rem,1fr))] gap-2.5">
   {#each products as product (product.id)}
     <li>
       <ProductTile {product} {onpick} />

@@ -14,45 +14,42 @@
   } = $props();
 </script>
 
-<li class="py-3">
-  <div class="flex items-start justify-between gap-2">
-    <div class="min-w-0">
-      <p class="truncate text-body-md text-ink">{line.name}</p>
-      <p class="text-caption text-ink-mute">
-        {formatUGX(line.unitPrice)} each
-      </p>
-    </div>
+<li class="flex items-center gap-1 py-1.5">
+  <div class="min-w-0 flex-1" title={`${line.name} — ${formatUGX(line.unitPrice)} each`}>
+    <p class="truncate text-body-md text-ink">{line.name}</p>
+    <p class="tnum text-caption text-ink-mute">{formatUGX(line.unitPrice)} each</p>
+  </div>
+
+  <div class="flex shrink-0 items-center">
     <button
       type="button"
-      class="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-ink-mute transition-colors hover:bg-canvas-soft hover:text-ink"
-      aria-label={`Remove ${line.name}`}
-      onclick={onremove}
+      class="inline-flex size-7 items-center justify-center rounded-sm border border-hairline-input text-ink-secondary transition-colors hover:bg-canvas-soft"
+      aria-label={`Decrease ${line.name}`}
+      onclick={() => onqty(line.qty - 1)}
     >
-      <X class="size-3.5" />
+      <Minus class="size-3" />
+    </button>
+    <span class="tnum w-7 text-center text-caption text-ink">{line.qty}</span>
+    <button
+      type="button"
+      class="inline-flex size-7 items-center justify-center rounded-sm border border-hairline-input text-ink-secondary transition-colors hover:bg-canvas-soft"
+      aria-label={`Increase ${line.name}`}
+      onclick={() => onqty(line.qty + 1)}
+    >
+      <Plus class="size-3" />
     </button>
   </div>
 
-  <div class="mt-2 flex items-center justify-between">
-    <div class="flex items-center gap-1">
-      <button
-        type="button"
-        class="inline-flex size-7 items-center justify-center rounded-sm border border-hairline-input text-ink-secondary transition-colors hover:bg-canvas-soft disabled:opacity-40"
-        aria-label={`Decrease ${line.name}`}
-        onclick={() => onqty(line.qty - 1)}
-      >
-        <Minus class="size-3.5" />
-      </button>
-      <span class="tnum w-8 text-center text-body-md text-ink">{line.qty}</span>
-      <button
-        type="button"
-        class="inline-flex size-7 items-center justify-center rounded-sm border border-hairline-input text-ink-secondary transition-colors hover:bg-canvas-soft"
-        aria-label={`Increase ${line.name}`}
-        onclick={() => onqty(line.qty + 1)}
-      >
-        <Plus class="size-3.5" />
-      </button>
-    </div>
+  <span class="tnum w-16 shrink-0 text-right text-body-md text-ink">
+    {formatUGX(lineTotal(line))}
+  </span>
 
-    <span class="tnum text-body-md text-ink">{formatUGX(lineTotal(line))}</span>
-  </div>
+  <button
+    type="button"
+    class="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-ink-mute transition-colors hover:bg-canvas-soft hover:text-ink"
+    aria-label={`Remove ${line.name}`}
+    onclick={onremove}
+  >
+    <X class="size-3" />
+  </button>
 </li>

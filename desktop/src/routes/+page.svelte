@@ -146,41 +146,33 @@
 </script>
 
 <div
-  class="flex min-h-[calc(100vh-3.5rem)] flex-col lg:h-[calc(100vh-3.5rem)] lg:flex-row"
+  class="flex min-h-[calc(100dvh-3rem)] flex-col lg:h-[calc(100dvh-3rem)] lg:flex-row"
 >
   <section class="flex min-h-0 flex-1 flex-col">
-    <header class="border-b border-hairline bg-canvas p-4">
-      <div class="flex flex-wrap items-center gap-3">
-        <div class="min-w-0 flex-1 basis-64">
-          <Input
-            id={SEARCH_ID}
-            bind:value={search}
-            onkeydown={addFromSearch}
-            placeholder="Scan or search products…"
-            aria-label="Scan or search products"
-          />
-        </div>
-        <div
-          class="flex items-center gap-2 rounded-pill border border-hairline px-3 py-1.5"
-          title="Cash in the drawer today"
-        >
-          <Wallet class="size-4 text-ink-mute" />
-          <span class="text-caption text-ink-secondary">Till</span>
-          <span class="tnum text-button-sm text-ink">{formatUGX(till.inDrawer)}</span>
-        </div>
-        <p class="text-caption text-ink-mute" aria-live="polite">
-          {loading ? "Loading…" : `${products.length} shown`}
-        </p>
+    <header class="flex flex-wrap items-center gap-2 border-b border-hairline bg-canvas px-3 py-2">
+      <div class="min-w-0 flex-1 lg:max-w-72">
+        <Input
+          id={SEARCH_ID}
+          bind:value={search}
+          onkeydown={addFromSearch}
+          placeholder="Scan or search products…"
+          aria-label="Scan or search products"
+          class="h-9"
+        />
       </div>
 
       {#if categories.length}
-        <div class="mt-3 flex flex-wrap gap-2">
+        <div
+          class="order-last -mx-1 flex w-full items-center gap-1.5 overflow-x-auto px-1 lg:order-none lg:mx-0 lg:w-auto lg:min-w-0 lg:flex-1 lg:px-0"
+          role="group"
+          aria-label="Category filter"
+        >
           <button
             type="button"
             aria-pressed={category === null}
             onclick={() => (category = null)}
             class={cn(
-              "h-8 rounded-pill border px-3 text-caption transition-colors",
+              "h-7 shrink-0 rounded-pill border px-2.5 text-caption transition-colors",
               category === null
                 ? "border-primary bg-primary/5 text-primary"
                 : "border-hairline text-ink-secondary hover:bg-canvas-soft",
@@ -194,7 +186,7 @@
               aria-pressed={category === name}
               onclick={() => (category = category === name ? null : name)}
               class={cn(
-                "h-8 rounded-pill border px-3 text-caption transition-colors",
+                "h-7 shrink-0 rounded-pill border px-2.5 text-caption transition-colors",
                 category === name
                   ? "border-primary bg-primary/5 text-primary"
                   : "border-hairline text-ink-secondary hover:bg-canvas-soft",
@@ -205,9 +197,22 @@
           {/each}
         </div>
       {/if}
+
+      <div
+        class="flex shrink-0 items-center gap-2 rounded-pill border border-hairline px-2.5 py-1"
+        title="Cash in the drawer today"
+      >
+        <Wallet class="size-3.5 text-ink-mute" />
+        <span class="text-caption text-ink-secondary">Till</span>
+        <span class="tnum text-button-sm text-ink">{formatUGX(till.inDrawer)}</span>
+      </div>
+
+      <p class="sr-only" aria-live="polite">
+        {loading ? "Loading products" : `${products.length} products shown`}
+      </p>
     </header>
 
-    <div class="min-h-0 flex-1 overflow-y-auto p-4">
+    <div class="min-h-0 flex-1 overflow-y-auto p-3">
       {#if error}
         <div
           class="flex flex-col items-center rounded-lg border border-hairline bg-canvas px-6 py-12 text-center"
@@ -226,10 +231,13 @@
           </Button>
         </div>
       {:else if loading && !products.length}
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4" aria-busy="true">
+        <div
+          class="grid grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-2.5"
+          aria-busy="true"
+        >
           {#each Array(8) as _, index (index)}
             <div
-              class="h-24 animate-pulse rounded-lg border border-hairline bg-canvas-soft"
+              class="h-20 animate-pulse rounded-lg border border-hairline bg-canvas-soft"
             ></div>
           {/each}
         </div>
@@ -237,7 +245,7 @@
         <TerminalGrid {products} onpick={(product) => cart.add(product)} />
       {:else}
         <div
-          class="flex flex-col items-center rounded-lg border border-dashed border-hairline bg-canvas px-6 py-16 text-center"
+          class="flex flex-col items-center rounded-lg border border-dashed border-hairline bg-canvas px-6 py-12 text-center"
         >
           {#if query || category}
             <SearchX class="size-6 text-ink-mute" />
@@ -258,7 +266,7 @@
   </section>
 
   <aside
-    class="flex min-h-[380px] shrink-0 flex-col border-t border-hairline bg-canvas lg:min-h-0 lg:w-[380px] lg:border-l lg:border-t-0"
+    class="flex min-h-[360px] shrink-0 flex-col border-t border-hairline bg-canvas lg:min-h-0 lg:w-[336px] lg:border-l lg:border-t-0"
   >
     <CartPanel oncharge={charge} {charging} />
   </aside>
