@@ -1,17 +1,20 @@
-import { and, desc, eq, inArray, like, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, like, sql } from "drizzle-orm";
+import { settle, type PaymentMethod } from "$lib/payment";
 import type { CartLine } from "$lib/stores/cart.svelte";
 import type { VatRate } from "$lib/utils";
 import { db } from "./client";
 import { friendlyError } from "./errors";
 import { orderItems, orders, type Order, type OrderItem } from "./schema";
 
-export type PaymentMethod = "cash" | "card";
+export type { PaymentMethod };
 export type OrderStatus = "completed" | "void";
 
 export type CheckoutInput = {
   lines: CartLine[];
   vatRate: VatRate;
   paymentMethod?: PaymentMethod;
+  /** What the customer handed over. Defaults to the exact total. */
+  tendered?: number;
 };
 
 export type CheckoutResult = {
@@ -20,6 +23,10 @@ export type CheckoutResult = {
   subtotal: number;
   tax: number;
   total: number;
+  /** What was handed over. */
+  tendered: number;
+  /** Change given back from the till. */
+  change: number;
 };
 
 function dayStamp(date = new Date()): string {
@@ -48,11 +55,14 @@ async function nextOrderNo(): Promise<string> {
  * Writes the order and its item snapshots in one transaction. Totals are
  * derived here from the lines so the persisted numbers can never drift from
  * the items they describe; the caller's cart is only a view of the same math.
+ * The payment is settled here too — a sale that was not paid for never
+ * reaches the database.
  */
 export async function createOrder({
   lines,
   vatRate,
   paymentMethod = "cash",
+  tendered,
 }: CheckoutInput): Promise<CheckoutResult> {
   if (!lines.length) throw new Error("Cannot charge an empty cart.");
 
@@ -65,6 +75,10 @@ export async function createOrder({
   const tax = Math.round((subtotal * vatRate) / 100);
   const total = subtotal + tax;
 
+  // A cash sale that does not cover the total is refused here, not left for
+  // the drawer to discover at closing time.
+  const payment = settle(total, paymentMethod, tendered ?? total);
+
   try {
     await db.batch([
       db.insert(orders).values({
@@ -74,7 +88,9 @@ export async function createOrder({
         taxRate: vatRate,
         tax,
         total,
-        paymentMethod,
+        paymentMethod: payment.method,
+        tendered: payment.tendered,
+        changeGiven: payment.change,
       }),
       ...lines.map((line) =>
         db.insert(orderItems).values({
@@ -91,7 +107,15 @@ export async function createOrder({
     throw friendlyError(cause);
   }
 
-  return { id, orderNo, subtotal, tax, total };
+  return {
+    id,
+    orderNo,
+    subtotal,
+    tax,
+    total,
+    tendered: payment.tendered,
+    change: payment.change,
+  };
 }
 
 /** An order row plus the item counts the history table shows. */
@@ -196,4 +220,47 @@ export async function deleteOrder(id: string): Promise<void> {
   } catch (cause) {
     throw friendlyError(cause);
   }
+}
+
+/** What is in the till for the local day. */
+export type CashSummary = {
+  /** Cash taken in, less the change given back. */
+  inDrawer: number;
+  /** Cash sales completed today. */
+  sales: number;
+};
+
+/**
+ * The cash the drawer should hold: everything that was handed in, less every
+ * change that went back out, across today's completed cash sales.
+ *
+ * `created_at` is UTC epoch milliseconds, so the day boundary is the local
+ * midnight rather than a UTC one — the till counts the shift, not the clock.
+ */
+export async function getCashSummary(now = new Date()): Promise<CashSummary> {
+  const startOfDay = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  ).getTime();
+
+  const row = await db
+    .select({
+      sales: sql<number>`count(${orders.id})`,
+      inDrawer: sql<number>`coalesce(sum(${orders.tendered} - ${orders.changeGiven}), 0)`,
+    })
+    .from(orders)
+    .where(
+      and(
+        eq(orders.status, "completed"),
+        eq(orders.paymentMethod, "cash"),
+        gte(orders.createdAt, startOfDay),
+      ),
+    )
+    .get();
+
+  return {
+    sales: Number(row?.sales ?? 0),
+    inDrawer: Number(row?.inDrawer ?? 0),
+  };
 }
