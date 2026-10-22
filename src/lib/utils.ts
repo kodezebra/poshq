@@ -49,6 +49,18 @@ export function formatDate(value: Date | string | number): string {
   })
 }
 
+/** Date and time, for order history. */
+export function formatDateTime(value: Date | string | number): string {
+  const date = value instanceof Date ? value : new Date(value)
+  return date.toLocaleString("en-GB", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+}
+
 /** Drizzle's own wrapper puts the generated SQL in the error message. */
 const DRIZZLE_QUERY_DUMP = /^failed query:/i
 

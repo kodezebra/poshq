@@ -1,11 +1,12 @@
-import { desc, like } from "drizzle-orm";
+import { and, desc, eq, inArray, like, sql } from "drizzle-orm";
 import type { CartLine } from "$lib/stores/cart.svelte";
 import type { VatRate } from "$lib/utils";
 import { db } from "./client";
 import { friendlyError } from "./errors";
-import { orderItems, orders } from "./schema";
+import { orderItems, orders, type Order } from "./schema";
 
 export type PaymentMethod = "cash" | "card";
+export type OrderStatus = "completed" | "void";
 
 export type CheckoutInput = {
   lines: CartLine[];
@@ -91,4 +92,63 @@ export async function createOrder({
   }
 
   return { id, orderNo, subtotal, tax, total };
+}
+
+/** An order row plus the item counts the history table shows. */
+export type OrderSummary = Order & {
+  /** Distinct product lines on the order. */
+  itemCount: number;
+  /** Total units sold. */
+  unitCount: number;
+};
+
+export type OrderFilter = {
+  /** Matches the order number, e.g. `POS-20261022`. */
+  search?: string;
+  status?: OrderStatus | "all";
+  limit?: number;
+};
+
+/** Orders newest first, optionally filtered by status and order number. */
+export async function listOrders({
+  search = "",
+  status = "all",
+  limit = 200,
+}: OrderFilter = {}): Promise<OrderSummary[]> {
+  const term = search.trim();
+  const conditions = [
+    status === "all" ? undefined : eq(orders.status, status),
+    term ? like(orders.orderNo, `%${term}%`) : undefined,
+  ];
+
+  const rows = await db
+    .select()
+    .from(orders)
+    .where(and(...conditions))
+    .orderBy(desc(orders.createdAt))
+    .limit(limit);
+
+  const ids = rows.map((row) => row.id);
+  if (!ids.length) return [];
+
+  const counts = await db
+    .select({
+      orderId: orderItems.orderId,
+      itemCount: sql<number>`count(${orderItems.id})`,
+      unitCount: sql<number>`coalesce(sum(${orderItems.qty}), 0)`,
+    })
+    .from(orderItems)
+    .where(inArray(orderItems.orderId, ids))
+    .groupBy(orderItems.orderId);
+
+  const byOrder = new Map(counts.map((row) => [row.orderId, row]));
+
+  return rows.map((row) => {
+    const count = byOrder.get(row.id);
+    return {
+      ...row,
+      itemCount: count?.itemCount ?? 0,
+      unitCount: count?.unitCount ?? 0,
+    };
+  });
 }

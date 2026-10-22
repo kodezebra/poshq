@@ -1,21 +1,24 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import { cn } from "$lib/utils";
 
   let {
     eyebrow,
     title,
     actions,
+    class: className,
     children,
   }: {
     eyebrow?: string;
     title: string;
     actions?: Snippet;
+    class?: string;
     /** Supporting line under the title, e.g. a live count. */
     children?: Snippet;
   } = $props();
 </script>
 
-<header class="flex flex-wrap items-end justify-between gap-4">
+<header class={cn("flex flex-wrap items-end justify-between gap-4", className)}>
   <div>
     {#if eyebrow}
       <p class="eyebrow text-ink-mute">{eyebrow}</p>

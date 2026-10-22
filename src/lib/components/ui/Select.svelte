@@ -1,21 +1,21 @@
-<script lang="ts">
+<script lang="ts" generics="T extends string = string">
   import { ChevronDown } from "@lucide/svelte";
   import { cn } from "$lib/utils";
 
-  type SelectOption = {
-    value: string;
+  type SelectOption<T> = {
+    value: T;
     label: string;
   };
 
   let {
-    value = $bindable(""),
+    value = $bindable("" as T),
     options,
     placeholder,
     class: className,
     ...rest
   }: {
-    value?: string;
-    options: SelectOption[];
+    value?: T;
+    options: SelectOption<T>[];
     placeholder?: string;
     class?: string;
     [key: string]: unknown;
