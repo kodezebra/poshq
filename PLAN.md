@@ -103,10 +103,17 @@ Currency: **UGX** — whole shillings only (no minor unit). VAT: **0% or 18%**, 
 - [x] `bun run check`, `cargo clippy -- -D warnings`, `bun run tauri build` smoke
   - `tauri build` compiles and links the app; the AppImage packaging step downloads `linuxdeploy`
     from GitHub, so bundling itself needs network access. Packaging is verified on a networked machine.
+- [x] Real-app verification: the built binary was driven through the accessibility bus —
+  add to cart → charge → the order landed in SQLite → the Orders page rendered it
+  - `scripts/real-app-smoke.py` keeps this repeatable: it asserts the window, the sidebar,
+    the products loaded from SQLite and the totals, then empties the cart without charging
+- [x] Cold start from an empty database: the binary recreates the schema, applies the
+  migrations and seeds the catalog by itself
 
 **Commits:**
 1. `fix(db): keep SQL out of user-facing errors`
 2. `chore(release): pos v1 polish, tests and docs`
+3. `test(app): smoke-test the shipped binary through the accessibility bus`
 
 ---
 
