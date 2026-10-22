@@ -6,6 +6,7 @@
   import Button from "$lib/components/button/Button.svelte";
   import Card from "$lib/components/card/Card.svelte";
   import OrderStatusBadge from "$lib/components/order/OrderStatusBadge.svelte";
+  import PaymentSummary from "$lib/components/order/PaymentSummary.svelte";
   import Table from "$lib/components/table/Table.svelte";
   import OrderTotals from "$lib/components/terminal/OrderTotals.svelte";
   import Dialog from "$lib/components/ui/Dialog.svelte";
@@ -135,8 +136,7 @@
 
     <PageHeader class="mt-4" eyebrow="Order" title={order.orderNo}>
       <p>
-        {formatDateTime(order.createdAt)} · Paid by
-        <span class="capitalize">{order.paymentMethod}</span>
+        {formatDateTime(order.createdAt)}
       </p>
 
       {#snippet actions()}
@@ -191,6 +191,11 @@
             total={order.total}
           />
         </div>
+        <PaymentSummary
+          method={order.paymentMethod}
+          tendered={order.tendered}
+          change={order.changeGiven}
+        />
       </Card>
     </div>
   {/if}

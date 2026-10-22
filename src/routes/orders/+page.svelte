@@ -3,6 +3,7 @@
   import Button from "$lib/components/button/Button.svelte";
   import Input from "$lib/components/input/Input.svelte";
   import OrderStatusBadge from "$lib/components/order/OrderStatusBadge.svelte";
+  import PaymentSummary from "$lib/components/order/PaymentSummary.svelte";
   import Table from "$lib/components/table/Table.svelte";
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
   import PageHeader from "$lib/components/ui/PageHeader.svelte";
@@ -166,8 +167,13 @@
           <td class="tnum whitespace-nowrap px-4 py-3 font-medium text-ink">
             {formatUGX(order.total)}
           </td>
-          <td class="whitespace-nowrap px-4 py-3 capitalize text-ink-mute">
-            {order.paymentMethod}
+          <td class="whitespace-nowrap px-4 py-3">
+            <PaymentSummary
+              compact
+              method={order.paymentMethod}
+              tendered={order.tendered}
+              change={order.changeGiven}
+            />
           </td>
           <td class="px-2 py-3 text-right">
             <a
