@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { toast } from "svelte-sonner";
-  import Button from "$lib/components/button/Button.svelte";
   import Card from "$lib/components/card/Card.svelte";
+  import PageHeader from "$lib/components/ui/PageHeader.svelte";
   import { getVatRate, setVatRate } from "$lib/db/settings";
   import { cart } from "$lib/stores/cart.svelte";
   import {
@@ -15,12 +15,10 @@
   } from "$lib/utils";
 
   let rate = $state<VatRate>(DEFAULT_VAT_RATE);
-  let savedRate = $state<VatRate>(DEFAULT_VAT_RATE);
   let loading = $state(true);
   let saving = $state(false);
   let error = $state<string | null>(null);
 
-  const dirty = $derived(rate !== savedRate);
   const description = (value: VatRate) =>
     value === 0 ? "No tax is added to a sale." : "Standard rate, added on top.";
 
@@ -28,7 +26,6 @@
     try {
       const stored = await getVatRate();
       rate = stored;
-      savedRate = stored;
       cart.setVatRate(stored);
     } catch (cause) {
       error = errorMessage(cause);
@@ -37,18 +34,24 @@
     }
   });
 
-  async function save() {
+  // Choosing a rate is the save action: one less control on screen.
+  async function choose(value: VatRate) {
+    if (value === rate || loading || saving) return;
+
+    const previous = rate;
+    rate = value;
+    cart.setVatRate(value);
     saving = true;
     error = null;
 
     try {
-      await setVatRate(rate);
-      savedRate = rate;
-      cart.setVatRate(rate);
-      toast.success(`VAT set to ${rate}%`, {
+      await setVatRate(value);
+      toast.success(`VAT set to ${value}%`, {
         description: "Applies to the open sale and new orders.",
       });
     } catch (cause) {
+      rate = previous;
+      cart.setVatRate(previous);
       error = errorMessage(cause);
       toast.error("Could not save VAT rate");
     } finally {
@@ -57,80 +60,66 @@
   }
 </script>
 
-<div class="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 lg:px-8">
-  <header>
-    <p class="eyebrow text-ink-mute">Workspace</p>
-    <h1 class="mt-1 text-display-lg text-ink">Settings</h1>
-    <p class="mt-1 text-body-md text-ink-mute">
-      How this register charges tax on a sale.
-    </p>
-  </header>
+<div class="mx-auto w-full max-w-2xl px-4 py-4 sm:px-6">
+  <PageHeader eyebrow="Workspace" title="Settings">
+    <p>How this register charges tax on a sale.</p>
+  </PageHeader>
 
-  <Card class="mt-6">
-    <form
-      onsubmit={(event) => {
-        event.preventDefault();
-        if (dirty && !saving) save();
-      }}
-    >
-      <div class="flex items-start justify-between gap-6">
-        <div>
-          <h2 class="text-heading-sm text-ink">VAT rate</h2>
-          <p class="mt-1 text-body-md text-ink-mute">
-            Prices are VAT-exclusive. The rate is added on top of the cart
-            subtotal, and each completed order keeps the rate it was charged at.
-          </p>
-        </div>
-        {#if !loading}
-          <span
-            class="shrink-0 rounded-pill bg-primary/5 px-3 py-1 text-caption text-primary"
-          >
-            {savedRate}% active
-          </span>
-        {/if}
+  <Card class="mt-4">
+    <div class="flex items-start justify-between gap-4">
+      <div class="min-w-0">
+        <h2 class="text-heading-sm text-ink">VAT rate</h2>
+        <p class="mt-1 text-caption text-ink-mute">
+          Prices are VAT-exclusive. The rate is added on top of the cart
+          subtotal, and each completed order keeps the rate it was charged at.
+        </p>
       </div>
+      {#if saving}
+        <span class="shrink-0 text-caption text-ink-mute" aria-live="polite">
+          Saving…
+        </span>
+      {/if}
+    </div>
 
-      <fieldset class="mt-5 grid gap-3 sm:grid-cols-2" disabled={loading}>
-        <legend class="sr-only">VAT rate</legend>
+    <fieldset class="mt-4" disabled={loading || saving}>
+      <legend class="sr-only">VAT rate</legend>
+      <div class="inline-flex items-center gap-0.5 rounded-md border border-hairline p-0.5">
         {#each VAT_RATES as value (value)}
           <label
             class={cn(
-              "flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors",
+              "flex h-8 cursor-pointer items-center rounded-sm px-4 text-button-sm transition-colors",
+              "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-primary",
               rate === value
-                ? "border-primary bg-primary/5"
-                : "border-hairline hover:bg-canvas-soft",
+                ? "bg-primary text-on-primary"
+                : "text-ink-secondary hover:bg-canvas-soft hover:text-ink",
             )}
           >
             <input
               type="radio"
               name="vat-rate"
               {value}
-              bind:group={rate}
-              class="mt-1 size-4 accent-primary"
+              checked={rate === value}
+              onchange={() => choose(value)}
+              class="sr-only"
             />
-            <span class="flex flex-col">
-              <span class="text-body-md text-ink">{value}%</span>
-              <span class="text-caption text-ink-mute">{description(value)}</span>
-            </span>
+            {value}%
           </label>
         {/each}
-      </fieldset>
-
-      <div
-        class="mt-5 flex items-center justify-between gap-4 border-t border-hairline pt-4"
-      >
-        <p class="text-caption text-ink-mute">
-          Open cart: VAT {rate}% =
-          <span class="tnum text-ink">{formatUGX(cart.tax)}</span>
-        </p>
-        <Button type="submit" disabled={loading || saving || !dirty}>
-          {saving ? "Saving…" : "Save VAT rate"}
-        </Button>
       </div>
+      <p class="mt-2 text-caption text-ink-mute">{description(rate)}</p>
+    </fieldset>
 
-      {#if error}
-        <p class="mt-3 text-body-md text-ruby" role="alert">{error}</p>
+    <p class="mt-4 border-t border-hairline pt-3 text-caption text-ink-mute">
+      {#if cart.isEmpty}
+        No open sale. The rate applies to the next order.
+      {:else}
+        Open cart: VAT {rate}% =
+        <span class="tnum text-ink">{formatUGX(cart.tax)}</span>
       {/if}
-    </form>
+    </p>
+
+    {#if error}
+      <p class="mt-3 text-body-md text-ruby" role="alert">{error}</p>
+    {/if}
   </Card>
 </div>
