@@ -244,7 +244,7 @@
       >
         {#each products as product (product.id)}
           <li
-            class="group relative flex items-center gap-4 px-3 py-2 transition-colors hover:bg-canvas-soft"
+            class="group relative flex items-center gap-4 px-3 py-2 transition-colors hover:bg-canvas-soft focus-within:-outline-offset-2 focus-within:outline-2 focus-within:outline-primary"
           >
             <button
               type="button"
