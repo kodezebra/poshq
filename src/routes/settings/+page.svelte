@@ -8,6 +8,7 @@
   import {
     cn,
     DEFAULT_VAT_RATE,
+    errorMessage,
     formatUGX,
     VAT_RATES,
     type VatRate,
@@ -30,7 +31,7 @@
       savedRate = stored;
       cart.setVatRate(stored);
     } catch (cause) {
-      error = cause instanceof Error ? cause.message : String(cause);
+      error = errorMessage(cause);
     } finally {
       loading = false;
     }
@@ -48,7 +49,7 @@
         description: "Applies to the open sale and new orders.",
       });
     } catch (cause) {
-      error = cause instanceof Error ? cause.message : String(cause);
+      error = errorMessage(cause);
       toast.error("Could not save VAT rate");
     } finally {
       saving = false;

@@ -48,3 +48,28 @@ export function formatDate(value: Date | string | number): string {
     day: "numeric",
   })
 }
+
+/**
+ * Normalise an unknown failure for display. Tauri rejects commands with the
+ * string returned by Rust, while Drizzle wraps driver failures in an error
+ * whose message is the generated SQL — so walk to the root cause and never
+ * show a cashier the query text.
+ */
+export function errorMessage(error: unknown): string {
+  let current: unknown = error
+  const seen = new Set<unknown>()
+
+  while (
+    current &&
+    typeof current === "object" &&
+    "cause" in current &&
+    (current as { cause?: unknown }).cause &&
+    !seen.has(current)
+  ) {
+    seen.add(current)
+    current = (current as { cause?: unknown }).cause
+  }
+
+  if (current instanceof Error) return current.message
+  return typeof current === "string" ? current : String(current)
+}

@@ -11,7 +11,7 @@
   import { listProducts } from "$lib/db/products";
   import { getVatRate } from "$lib/db/settings";
   import { cart } from "$lib/stores/cart.svelte";
-  import { cn, formatUGX } from "$lib/utils";
+  import { cn, errorMessage, formatUGX } from "$lib/utils";
 
   const SEARCH_ID = "terminal-search";
 
@@ -65,7 +65,7 @@
       })
       .catch((cause: unknown) => {
         if (cancelled) return;
-        error = cause instanceof Error ? cause.message : String(cause);
+        error = errorMessage(cause);
       })
       .finally(() => {
         if (!cancelled) loading = false;
@@ -116,7 +116,7 @@
       focusSearch();
     } catch (cause) {
       toast.error("Could not complete the sale", {
-        description: cause instanceof Error ? cause.message : String(cause),
+        description: errorMessage(cause),
       });
     } finally {
       charging = false;
