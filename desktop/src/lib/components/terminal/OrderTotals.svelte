@@ -18,22 +18,24 @@
 </script>
 
 {#if compact}
-  <dl class="flex items-end justify-between gap-3">
-    <div class="flex flex-col">
-      <dt class="text-caption text-ink-mute">Total</dt>
-      <dd class="tnum text-heading-md leading-tight text-ink">
-        {formatUGX(total)}
-      </dd>
+  <dl class="flex flex-col gap-1">
+    <div
+      class="flex items-baseline justify-between gap-3 text-caption text-ink-mute"
+    >
+      <dt>Subtotal</dt>
+      <dd class="tnum text-ink-secondary">{formatUGX(subtotal)}</dd>
     </div>
-    <div class="flex flex-col items-end text-caption text-ink-mute">
-      <div class="flex items-baseline gap-1.5">
-        <dt>Subtotal</dt>
-        <dd class="tnum text-ink-secondary">{formatUGX(subtotal)}</dd>
-      </div>
-      <div class="flex items-baseline gap-1.5">
-        <dt>VAT ({vatRate}%)</dt>
-        <dd class="tnum text-ink-secondary">{formatUGX(tax)}</dd>
-      </div>
+    <div
+      class="flex items-baseline justify-between gap-3 text-caption text-ink-mute"
+    >
+      <dt>VAT ({vatRate}%)</dt>
+      <dd class="tnum text-ink-secondary">{formatUGX(tax)}</dd>
+    </div>
+    <div
+      class="mt-1 flex items-baseline justify-between gap-3 border-t border-hairline pt-2"
+    >
+      <dt class="text-caption text-ink-mute">Total</dt>
+      <dd class="tnum text-display-lg text-ink">{formatUGX(total)}</dd>
     </div>
   </dl>
 {:else}

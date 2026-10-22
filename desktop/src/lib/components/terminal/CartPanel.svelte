@@ -88,7 +88,7 @@
   {/if}
 
   {#if !cart.isEmpty && mode === "cart" && oncharge}
-    <footer class="border-t border-hairline p-3">
+    <footer class="border-t border-hairline px-3 pb-3 pt-2.5">
       <OrderTotals
         compact
         subtotal={cart.subtotal}
@@ -96,7 +96,7 @@
         vatRate={cart.vatRate}
         total={cart.total}
       />
-      <Button class="mt-2.5 w-full" onclick={() => (mode = "pay")}>
+      <Button class="mt-3 h-11 w-full" onclick={() => (mode = "pay")}>
         Charge {formatUGX(cart.total)}
       </Button>
     </footer>

@@ -48,6 +48,11 @@
 </script>
 
 <div class="space-y-3">
+  <div class="flex items-baseline justify-between gap-3">
+    <span class="text-caption text-ink-mute">Amount due</span>
+    <span class="tnum text-display-lg text-ink">{formatUGX(total)}</span>
+  </div>
+
   <div class="flex gap-2" role="group" aria-label="Payment method">
     {#each METHODS as option (option.id)}
       <button
@@ -120,7 +125,7 @@
       {/if}
 
       <p
-        class="text-body-md"
+        class="tnum text-heading-sm"
         class:text-ruby={short > 0}
         class:text-ink={short === 0 && change > 0}
         class:text-ink-mute={short === 0 && change === 0}
@@ -142,7 +147,7 @@
   {/if}
 
   <Button
-    class="w-full"
+    class="h-11 w-full"
     disabled={blocked || charging}
     onclick={() => onconfirm({ method, tendered })}
   >
