@@ -58,9 +58,9 @@ Currency: **UGX** — whole shillings only (no minor unit). VAT: **0% or 18%**, 
 - [x] `src/lib/stores/cart.svelte.ts`: `add/remove/setQty/clear`, derived `subtotal`, `tax`, `total`; tax uses the loaded `vat_rate`
 - [x] `src/lib/db/settings.ts`: `getVatRate()`, `setVatRate(0 | 18)`
 - [x] Components: `ProductTile`, `TerminalGrid`, `CartPanel`, `CartLine`, `OrderTotals`
-- [ ] Terminal layout: search + category filter + grid (left), cart + Charge (right); Enter adds first match (scanner-friendly)
-- [ ] `src/lib/db/orders.ts`: `createOrder()` via `db.batch([order, ...items])`, snapshots `tax_rate`, `order_no` `POS-YYYYMMDD-####`
-- [ ] Charge → atomic insert → toast → cart reset
+- [x] Terminal layout: search + category filter + grid (left), cart + Charge (right); Enter adds first match (scanner-friendly)
+- [x] `src/lib/db/orders.ts`: `createOrder()` via `db.batch([order, ...items])`, snapshots `tax_rate`, `order_no` `POS-YYYYMMDD-####`
+- [x] Charge → atomic insert → toast → cart reset
 - [x] `/settings`: VAT select (`0%` / `18%`) persisted via `settings`; changing it recalculates the open cart only — completed orders keep their snapshot
 
 **Commits:**

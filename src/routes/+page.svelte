@@ -1,15 +1,17 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { PackageSearch, RefreshCw, SearchX } from "@lucide/svelte";
+  import { toast } from "svelte-sonner";
   import Button from "$lib/components/button/Button.svelte";
   import Input from "$lib/components/input/Input.svelte";
   import CartPanel from "$lib/components/terminal/CartPanel.svelte";
   import TerminalGrid from "$lib/components/terminal/TerminalGrid.svelte";
   import type { Product } from "$lib/db/schema";
+  import { createOrder } from "$lib/db/orders";
   import { listProducts } from "$lib/db/products";
   import { getVatRate } from "$lib/db/settings";
   import { cart } from "$lib/stores/cart.svelte";
-  import { cn } from "$lib/utils";
+  import { cn, formatUGX } from "$lib/utils";
 
   const SEARCH_ID = "terminal-search";
 
@@ -20,6 +22,7 @@
   let products = $state<Product[]>([]);
   let loading = $state(true);
   let error = $state<string | null>(null);
+  let charging = $state(false);
   let reloadKey = $state(0);
 
   const focusSearch = () => document.getElementById(SEARCH_ID)?.focus();
@@ -89,6 +92,35 @@
     search = "";
     query = "";
     focusSearch();
+  }
+
+  async function charge() {
+    if (cart.isEmpty || charging) return;
+    charging = true;
+
+    try {
+      const order = await createOrder({
+        lines: [...cart.lines],
+        vatRate: cart.vatRate,
+      });
+
+      toast.success(`Order ${order.orderNo} charged`, {
+        description: `${formatUGX(order.total)} · ${cart.count} ${
+          cart.count === 1 ? "item" : "items"
+        }`,
+      });
+
+      cart.clear();
+      search = "";
+      query = "";
+      focusSearch();
+    } catch (cause) {
+      toast.error("Could not complete the sale", {
+        description: cause instanceof Error ? cause.message : String(cause),
+      });
+    } finally {
+      charging = false;
+    }
   }
 </script>
 
@@ -199,6 +231,6 @@
   <aside
     class="flex min-h-[380px] shrink-0 flex-col border-t border-hairline bg-canvas lg:min-h-0 lg:w-[380px] lg:border-l lg:border-t-0"
   >
-    <CartPanel />
+    <CartPanel oncharge={charge} {charging} />
   </aside>
 </div>
