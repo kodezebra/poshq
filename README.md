@@ -102,6 +102,7 @@ self-contained.
 | `bun run test:watch` | Vitest in watch mode |
 | `bunx drizzle-kit generate` | Generate a new SQL migration from the schema |
 | `cargo test --manifest-path src-tauri/Cargo.toml` | Rust tests |
+| `python3 scripts/real-app-smoke.py` | Smoke-test the built binary through the accessibility bus |
 
 ---
 
@@ -191,6 +192,8 @@ src-tauri/
   src/db.rs         connection, PRAGMAs, migrations, seed
   src/commands.rs   the db_query / db_batch bridge
   migrations/       generated SQL, embedded at compile time
+scripts/
+  real-app-smoke.py drives the built binary through the accessibility bus
 ```
 
 ---
@@ -222,6 +225,28 @@ bun run check                                    # svelte-check
 The unit tests cover the arithmetic a cashier cannot afford to get wrong and
 the promise that errors never leak SQL. Anything that needs a database or a
 window is covered by the manual QA pass instead of by a browser harness.
+
+### Verifying the real app
+
+`scripts/real-app-smoke.py` drives the built binary the way a screen reader
+would: it reads the accessibility tree of the running window and asserts what
+a cashier would see — the window title, the sidebar, the products loaded from
+SQLite, and the totals on screen.
+
+```bash
+bun run tauri build --no-bundle       # produces src-tauri/target/release/desktop
+python3 scripts/real-app-smoke.py     # launches it, checks it, shuts it down
+python3 scripts/real-app-smoke.py --pid 12345   # attach to a running app
+```
+
+It adds one product to the cart, checks that the subtotal, the tax and the
+total agree with each other, then empties the cart. It never charges a sale,
+so it leaves the database alone.
+
+This is the only check that exercises the whole chain — webview, Tauri IPC,
+Rust, SQLite, drizzle and the UI — in the binary that actually ships. It needs
+an X or Wayland session with the accessibility bus available (`at-spi2-core`);
+on GNOME, log in over a real session rather than a nested one.
 
 ---
 
