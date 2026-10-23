@@ -1,5 +1,5 @@
 import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { twMerge } from "./tw-merge"
 
 /**
  * Merge Tailwind CSS classes, removing conflicts and ensuring proper ordering.

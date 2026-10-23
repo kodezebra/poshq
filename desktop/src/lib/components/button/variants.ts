@@ -1,4 +1,5 @@
 import { tv, type VariantProps } from "tailwind-variants";
+import { twMergeConfig } from "$lib/tw-merge";
 
 /**
  * Instrument button system — rectangular 6px controls, one filled action per
@@ -31,6 +32,9 @@ export const buttonVariants = tv({
     variant: "primary",
     size: "md",
   },
+}, {
+  // Without this the merger drops `text-on-primary` in favour of the size.
+  twMergeConfig,
 });
 
 export type ButtonVariants = VariantProps<typeof buttonVariants>;

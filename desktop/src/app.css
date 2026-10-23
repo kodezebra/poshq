@@ -68,6 +68,10 @@
   /* ---- Type scale (size / line-height / tracking / weight) -----------
    * Weights are 400 and above. Light text at 300 was the single biggest
    * legibility defect in the previous system, especially at 1366px.
+   *
+   * Every `--text-*` name below is also listed in src/lib/tw-merge.ts:
+   * tailwind-merge cannot tell these sizes from `text-*` colours and would
+   * drop one of the two. Add new sizes to both files.
    */
   --text-display-xxl: 56px;
   --text-display-xxl--line-height: 1.03;
