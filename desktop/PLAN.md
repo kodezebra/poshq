@@ -229,6 +229,99 @@ offline trading (no queue).
 
 ---
 
+## M10 — Multi-teller on the LAN (A1)
+
+One main till owns SQLite; the other computers run the same app in client mode
+and talk to it over the shop LAN. No offline selling in A1.
+
+```
+[Main till: app + posh.db + HTTP API]
+        │  LAN, port 47821
+        ├── [Till 2: same app, client mode]
+        └── [Till 3: same app, client mode]
+```
+
+- One installer, two roles. The role is chosen on first run and stored locally.
+- The main till keeps the existing `invoke("db_query")` path and also starts an
+  HTTP API.
+- Client tills send the same query payloads to `POST /api/db/query` and
+  `POST /api/db/batch`.
+- Every till keeps the full UI; only the data transport changes.
+- No local cache and no queue: if the main till is unreachable, client sales
+  pause and the UI says so.
+
+| Area | Decision |
+| --- | --- |
+| Main | One computer owns `posh.db` and runs the API |
+| Client | Same app; no authoritative local database |
+| Network | Same LAN/WiFi; no internet required |
+| Auth | Shared token from the main till, sent as `x-posh-token` |
+| Port | `47821`, fixed for A1 |
+| Identity | Each install has a till name and short code, e.g. `T1` |
+| Order no. | `POS-YYYYMMDD-T1-0001`; the till prefix prevents collisions |
+| Offline | None; clients block charging while disconnected |
+| Role config | `localStorage`; changing role reloads the app |
+
+**Work**
+
+1. Server
+   - Add `axum`, `tower-http` and `tokio`.
+   - `src-tauri/src/server.rs`: `GET /health`, `POST /api/db/query`,
+     `POST /api/db/batch`.
+   - Reuse `execute` / `execute_batch`; make `Db` an `Arc<Mutex<Connection>>`.
+   - Check the token, allow CORS for the webview, bind `0.0.0.0:47821`.
+   - Tauri commands: `start_lan_server` and `lan_info` (local IP + port).
+2. Transport
+   - `src/lib/connection.ts`: role, till name/code, server URL and token in
+     `localStorage`.
+   - `src/lib/db/client.ts`: main uses `invoke`; client uses `fetch` with a
+     10-second timeout and a plain-language error.
+3. Setup and settings
+   - First-run screen: **Main till** or **Connect to main till**.
+   - Main shows `http://<ip>:47821` and its token.
+   - Client tests `/health` before saving.
+   - Settings shows role, till and connection status; changing it re-runs setup.
+4. Identity and order numbers
+   - Migration `0002_till_name.sql`; add nullable `orders.till_name`.
+   - `createOrder` takes the till name/code; the order number uses the till code.
+   - Orders list and detail show the till.
+   - The Terminal till total filters to this till.
+5. Connection state
+   - Top-bar dot: **Main**, **Connected** or **Offline**.
+   - Client offline screen with retry and connection settings.
+   - Disable **Charge** while offline; poll `/health` every 10 seconds.
+6. Docs and checks
+   - README: port, firewall, token and a two-machine test.
+   - `bun run check`, `bunx vitest run`, `cargo clippy`, `cargo test`.
+
+**Acceptance**
+
+- The main till starts, shows its URL and token, and serves requests.
+- A client connects with URL and token and sees the same products and orders.
+- A client charge lands in the main database, records the till, and cannot
+  collide with another till's order number.
+- A wrong URL or token is rejected with a clear message.
+- Stopping the main till makes clients show Offline and block charging;
+  restarting it reconnects.
+- Existing single-till data still opens; older orders show no till.
+- `bun run check`, `bunx vitest run`, `cargo clippy`, `cargo test` pass.
+
+**Not in A1**
+
+Offline selling or a queue, full local-first sync, teller accounts/PINs/shifts,
+cloud hosting, receipts, and multi-site operation.
+
+**Commits**
+
+1. `feat(server): serve the till database over the LAN`
+2. `feat(connection): add main/client roles and fetch transport`
+3. `feat(setup): choose the main till or connect to it`
+4. `feat(orders): record the till and namespace order numbers`
+5. `feat(terminal): show the till's cash and connection state`
+6. `docs(plan): record A1 multi-teller on the LAN`
+
+---
+
 ## Milestone gates
 
 | Gate | Pass condition |
@@ -242,10 +335,12 @@ offline trading (no queue).
 | M7 | A cash sale stores what was tendered and the change given back; a short sale cannot be completed; the drawer total matches the sales behind it |
 | M8 | The register fits a 1366×768 till without scrolling for the common case; cart, catalog and order rows stay readable; every control keeps a keyboard focus ring |
 | M9 | Every text and control pair meets WCAG AA on its own surface; one filled action per surface; the till's total is the largest figure at 1366×768; tables sort with `aria-sort` and keep their header; smoke stays green |
+| M10 | Two computers share one catalog and one order history over the LAN; each sale records its till; no two tills can generate the same order number; clients stop cleanly when the main till is unavailable |
 
 ## Out of scope for v1
 
-Auth/roles, receipts & printing, stock counts, refunds/partial payments, multi-register sync, per-product VAT classes, i18n.
+Auth/roles, receipts & printing, stock counts, refunds/partial payments, cloud
+sync, offline selling, per-product VAT classes, i18n.
 
 ## Rollback
 
