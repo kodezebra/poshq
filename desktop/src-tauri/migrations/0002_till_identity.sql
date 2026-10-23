@@ -1,0 +1,1 @@
+ALTER TABLE `orders` ADD `till_name` text;

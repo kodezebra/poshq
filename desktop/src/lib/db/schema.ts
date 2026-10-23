@@ -44,6 +44,8 @@ export const orders = sqliteTable(
   {
     id: text("id").primaryKey(),
     orderNo: text("order_no").notNull().unique(),
+    /** The till that rang the sale. Null on orders from before multi-till. */
+    tillName: text("till_name"),
     status: text("status", { enum: ["completed", "void"] })
       .notNull()
       .default("completed"),

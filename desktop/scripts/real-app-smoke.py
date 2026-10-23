@@ -12,7 +12,9 @@ due on a cash sale and the confirmation that follows it.
 The check is non-destructive. It adds one product to the cart, asserts the
 totals, then pays for the sale with a cash note and reads the sale back out
 of the database. The database is snapshotted before the sale and restored
-afterwards, so the run leaves it exactly as it found it.
+afterwards, so the run leaves it exactly as it found it. If the app has not
+been set up yet, the check chooses the main till with the default name/code
+first.
 
 Usage:
     python3 scripts/real-app-smoke.py                      # launch the release build
@@ -242,7 +244,7 @@ def flat(text: str) -> str:
 
 def till_total(text: str) -> int | None:
     """The cash in the drawer, as shown in the terminal header."""
-    match = re.search(r"Till\s*USh\s*([\d,]+)", text or "")
+    match = re.search(r"Till\s+[A-Za-z0-9]{1,4}\s*USh\s*([\d,]+)", text or "")
     if not match:
         return None
     return int(match.group(1).replace(",", ""))
@@ -336,6 +338,55 @@ class Report:
         if not failed:
             return f"{len(self.checks)} checks passed"
         return f"{len(failed)} of {len(self.checks)} checks failed: " + "; ".join(failed)
+
+
+def wait_for_button(app: App, matches, timeout: float = 15.0):
+    """Wait for a button to appear, re-reading the accessibility tree."""
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        node, label = app.button(matches)
+        if node is not None:
+            return node, label
+        time.sleep(0.25)
+        app = App.find(app.pid)
+    return None, ""
+
+
+def wait_for_register(app: App, timeout: float = 25.0) -> App:
+    """Wait until the terminal shows a till code after setup or a reload."""
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        body = app.body_text()
+        if re.search(r"Till\s+[A-Za-z0-9]{1,4}\b", body) and re.search(
+            r"\d+\s+products?\s+shown", body
+        ):
+            return app
+        time.sleep(0.3)
+        app = App.find(app.pid)
+    return app
+
+
+def ensure_main_till(app: App, report: Report) -> App:
+    """Finish first-run setup as the main till, if this is a fresh install."""
+    body = flat(app.body_text()).lower()
+    if "set up this computer" not in body:
+        return app
+
+    report.note("first run", "setting this install up as the main till")
+    choose, label = wait_for_button(app, lambda name: "Choose main till" in name)
+    if choose is None:
+        report.check(False, "first-run setup", "<no main till choice>")
+        return app
+    app.click(choose)
+    time.sleep(0.5)
+
+    start, label = wait_for_button(app, lambda name: "Start selling here" in name)
+    if start is None:
+        report.check(False, "first-run setup", "<no start button>")
+        return app
+    app.click(start)
+
+    return wait_for_register(app)
 
 
 def quick_notes(app: App) -> list[tuple[int, object]]:
@@ -491,6 +542,9 @@ def run_checks(
         report.check(False, "webview rendered", "the window never showed any content")
         return
 
+    app = ensure_main_till(app, report)
+    app = wait_for_register(app)
+
     title = next(
         (app.name_of(node) for node, _ in app.nodes() if node.get_role_name() == "frame"),
         "",
@@ -502,7 +556,12 @@ def run_checks(
     report.check(not missing, "sidebar navigation", "missing: " + ", ".join(missing) if missing else "all four links present")
 
     body = app.body_text()
-    report.check("Till 01" in body, "register loaded", "Till 01" if "Till 01" in body else "<not found>")
+    till = re.search(r"Till\s+([A-Za-z0-9]{1,4})\b", body)
+    report.check(
+        till is not None,
+        "register loaded",
+        f"Till {till.group(1)}" if till else "<no till code found>",
+    )
 
     till_before = till_total(body)
     report.note("cash drawer starts at", "unread" if till_before is None else str(till_before))

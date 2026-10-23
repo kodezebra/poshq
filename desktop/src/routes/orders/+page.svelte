@@ -15,6 +15,7 @@
     type OrderSummary,
   } from "$lib/db/orders";
   import { sortOrders } from "$lib/order-sort";
+  import { connection } from "$lib/stores/connection.svelte";
   import { errorMessage, formatDateTime, formatUGX } from "$lib/utils";
 
   type StatusFilter = OrderStatus | "all";
@@ -28,6 +29,7 @@
   const COLUMNS: TableColumn[] = [
     { label: "Order", sortKey: "order" },
     { label: "Date", sortKey: "date" },
+    { label: "Till" },
     { label: "Items", align: "end", sortKey: "items" },
     { label: "Status" },
     { label: "Total", align: "end", sortKey: "total" },
@@ -103,7 +105,10 @@
 </script>
 
 <div class="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6">
-  <PageHeader eyebrow="Register 01" title="Orders">
+  <PageHeader
+    eyebrow={connection.config?.tillName ?? "Register"}
+    title="Orders"
+  >
     <p aria-live="polite">
       {#if loading}
         Loading orders…
@@ -117,7 +122,7 @@
       <div class="w-full sm:w-60">
         <Input
           bind:value={search}
-          placeholder="Search order number…"
+          placeholder="Search order number or till…"
           aria-label="Search orders"
           class="h-9"
         />
@@ -169,6 +174,9 @@
           <td class="whitespace-nowrap px-3 py-2 text-ink-mute">
             {formatDateTime(order.createdAt)}
           </td>
+          <td class="whitespace-nowrap px-3 py-2 text-ink-secondary">
+            {order.tillName ?? "—"}
+          </td>
           <td
             class="tnum whitespace-nowrap px-3 py-2 text-end text-ink-mute"
           >
@@ -203,7 +211,7 @@
     <EmptyState
       class="mt-4"
       title={`No orders match “${query}”`}
-      description="Try a different order number."
+      description="Try a different order number or till name."
     >
       {#snippet icon()}
         <SearchX class="size-6" />

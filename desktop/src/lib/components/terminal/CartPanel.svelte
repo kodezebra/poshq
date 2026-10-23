@@ -3,6 +3,7 @@
   import Button from "$lib/components/button/Button.svelte";
   import type { PaymentMethod } from "$lib/payment";
   import { cart } from "$lib/stores/cart.svelte";
+  import { connection } from "$lib/stores/connection.svelte";
   import { formatUGX } from "$lib/utils";
   import CartLine from "./CartLine.svelte";
   import OrderTotals from "./OrderTotals.svelte";
@@ -21,6 +22,10 @@
    * pad on its own view means the cart lines keep their full height.
    */
   let mode = $state<"cart" | "pay">("cart");
+
+  const offline = $derived(
+    connection.config?.role === "client" && !connection.online,
+  );
 
   // Charging (or clearing) empties the cart, which returns the next sale to the
   // cart view without any extra bookkeeping.
@@ -72,6 +77,7 @@
       <PaymentPad
         total={cart.total}
         {charging}
+        disabled={offline}
         onconfirm={(payment) => oncharge(payment)}
       />
     </div>
@@ -96,7 +102,12 @@
         vatRate={cart.vatRate}
         total={cart.total}
       />
-      <Button class="mt-3 h-11 w-full" onclick={() => (mode = "pay")}>
+      <Button
+        class="mt-3 h-11 w-full"
+        disabled={offline}
+        title={offline ? "The main till is unreachable" : undefined}
+        onclick={() => (mode = "pay")}
+      >
         Charge {formatUGX(cart.total)}
       </Button>
     </footer>

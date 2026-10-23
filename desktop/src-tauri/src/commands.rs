@@ -1,12 +1,12 @@
 use crate::db::Db;
 use rusqlite::types::{Value as SqlValue, ValueRef};
-use rusqlite::{params_from_iter, Connection};
+use rusqlite::{Connection, params_from_iter};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tauri::State;
 
 /// Mirrors Drizzle's `sqlite-proxy` callback: one statement per request.
-#[derive(Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct QueryRequest {
     pub sql: String,
     pub params: Vec<Value>,
@@ -16,7 +16,7 @@ pub struct QueryRequest {
 
 /// `rows` is `null` when a `get` matched nothing — Drizzle maps that to
 /// `undefined`. `all`/`values` return an array of positional row arrays.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct QueryResponse {
     pub rows: Option<Vec<Value>>,
 }
@@ -64,13 +64,15 @@ fn fail(sql: &str, error: impl std::fmt::Display) -> String {
     error.to_string()
 }
 
-fn execute(conn: &Connection, request: &QueryRequest) -> Result<QueryResponse, String> {
+pub(crate) fn execute(conn: &Connection, request: &QueryRequest) -> Result<QueryResponse, String> {
     let params: Vec<SqlValue> = request.params.iter().map(to_sql_value).collect();
 
     if request.method == "run" {
         conn.execute(&request.sql, params_from_iter(params))
             .map_err(|error| fail(&request.sql, error))?;
-        return Ok(QueryResponse { rows: Some(Vec::new()) });
+        return Ok(QueryResponse {
+            rows: Some(Vec::new()),
+        });
     }
 
     let mut statement = conn
@@ -85,7 +87,9 @@ fn execute(conn: &Connection, request: &QueryRequest) -> Result<QueryResponse, S
     while let Some(row) = rows.next().map_err(|error| fail(&request.sql, error))? {
         let mut values = Vec::with_capacity(columns);
         for index in 0..columns {
-            let value = row.get_ref(index).map_err(|error| fail(&request.sql, error))?;
+            let value = row
+                .get_ref(index)
+                .map_err(|error| fail(&request.sql, error))?;
             values.push(from_sql_value(value));
         }
         collected.push(Value::Array(values));
@@ -105,7 +109,7 @@ fn execute(conn: &Connection, request: &QueryRequest) -> Result<QueryResponse, S
     })
 }
 
-fn execute_batch(
+pub(crate) fn execute_batch(
     conn: &mut Connection,
     batch: &[QueryRequest],
 ) -> Result<Vec<QueryResponse>, String> {
@@ -125,7 +129,9 @@ fn execute_batch(
 
 #[tauri::command]
 pub fn db_query(db: State<'_, Db>, request: QueryRequest) -> Result<QueryResponse, String> {
-    let conn = db.0.lock().map_err(|_| "database lock poisoned".to_string())?;
+    let conn =
+        db.0.lock()
+            .map_err(|_| "database lock poisoned".to_string())?;
     execute(&conn, &request)
 }
 
@@ -133,7 +139,9 @@ pub fn db_query(db: State<'_, Db>, request: QueryRequest) -> Result<QueryRespons
 /// sale and its line items either both land or neither does.
 #[tauri::command]
 pub fn db_batch(db: State<'_, Db>, batch: Vec<QueryRequest>) -> Result<Vec<QueryResponse>, String> {
-    let mut conn = db.0.lock().map_err(|_| "database lock poisoned".to_string())?;
+    let mut conn =
+        db.0.lock()
+            .map_err(|_| "database lock poisoned".to_string())?;
     execute_batch(&mut conn, &batch)
 }
 
@@ -311,10 +319,7 @@ mod tests {
             !error.contains("VALUES"),
             "error leaked the statement: {error}"
         );
-        assert!(
-            !error.contains('?'),
-            "error leaked the statement: {error}"
-        );
+        assert!(!error.contains('?'), "error leaked the statement: {error}");
         assert!(
             error.contains("UNIQUE constraint failed"),
             "error lost the reason: {error}"

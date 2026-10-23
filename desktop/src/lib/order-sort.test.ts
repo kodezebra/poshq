@@ -5,6 +5,7 @@ import type { OrderSummary } from "./db/orders";
 function order(overrides: Partial<OrderSummary> & { id: string }): OrderSummary {
   return {
     orderNo: `POS-${overrides.id}`,
+    tillName: null,
     status: "completed",
     subtotal: 0,
     taxRate: 0,

@@ -270,7 +270,8 @@ and talk to it over the shop LAN. No offline selling in A1.
      `POST /api/db/batch`.
    - Reuse `execute` / `execute_batch`; make `Db` an `Arc<Mutex<Connection>>`.
    - Check the token, allow CORS for the webview, bind `0.0.0.0:47821`.
-   - Tauri commands: `start_lan_server` and `lan_info` (local IP + port).
+   - Tauri commands: `start_lan_server`, `stop_lan_server` and `lan_info`
+     (local IP + port).
 2. Transport
    - `src/lib/connection.ts`: role, till name/code, server URL and token in
      `localStorage`.
@@ -282,7 +283,7 @@ and talk to it over the shop LAN. No offline selling in A1.
    - Client tests `/health` before saving.
    - Settings shows role, till and connection status; changing it re-runs setup.
 4. Identity and order numbers
-   - Migration `0002_till_name.sql`; add nullable `orders.till_name`.
+   - Migration `0002_till_identity.sql`; add nullable `orders.till_name`.
    - `createOrder` takes the till name/code; the order number uses the till code.
    - Orders list and detail show the till.
    - The Terminal till total filters to this till.

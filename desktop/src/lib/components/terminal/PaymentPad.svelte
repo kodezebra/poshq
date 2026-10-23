@@ -13,10 +13,13 @@
   let {
     total,
     charging = false,
+    disabled = false,
     onconfirm,
   }: {
     total: number;
     charging?: boolean;
+    /** True while a client till cannot reach the main till. */
+    disabled?: boolean;
     onconfirm: (payment: { method: PaymentMethod; tendered: number }) => void;
   } = $props();
 
@@ -146,9 +149,15 @@
     </p>
   {/if}
 
+  {#if disabled}
+    <p class="text-caption text-ruby" role="status">
+      The main till is unreachable. Reconnect before charging.
+    </p>
+  {/if}
+
   <Button
     class="h-11 w-full"
-    disabled={blocked || charging}
+    disabled={blocked || charging || disabled}
     onclick={() => onconfirm({ method, tendered })}
   >
     {charging

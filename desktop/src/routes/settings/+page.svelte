@@ -1,12 +1,15 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { Check } from "@lucide/svelte";
+  import { Check, Copy, MonitorSmartphone, Store } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
   import Button from "$lib/components/button/Button.svelte";
   import Card from "$lib/components/card/Card.svelte";
+  import Dialog from "$lib/components/ui/Dialog.svelte";
   import PageHeader from "$lib/components/ui/PageHeader.svelte";
+  import { clearConnection } from "$lib/connection";
   import { getVatRate, setVatRate } from "$lib/db/settings";
   import { cart } from "$lib/stores/cart.svelte";
+  import { connection } from "$lib/stores/connection.svelte";
   import {
     cn,
     DEFAULT_VAT_RATE,
@@ -22,6 +25,38 @@
   let ready = $state(false);
   let saving = $state(false);
   let error = $state<string | null>(null);
+  let copied = $state<string | null>(null);
+  let confirmSetup = $state(false);
+  let changing = $state(false);
+
+  const isMain = $derived(connection.isMain);
+  const token = $derived(connection.config?.token ?? "");
+  const address = $derived(
+    connection.isMain && connection.serverInfo && !connection.serverInfo.ip
+      ? ""
+      : connection.url,
+  );
+
+  async function copy(value: string, key: string) {
+    if (!value) return;
+
+    try {
+      await navigator.clipboard.writeText(value);
+      copied = key;
+      setTimeout(() => {
+        if (copied === key) copied = null;
+      }, 2_000);
+    } catch {
+      toast.error("Could not copy. Select the text and copy it by hand.");
+    }
+  }
+
+  async function changeSetup() {
+    changing = true;
+    await connection.stopServer();
+    clearConnection();
+    window.location.reload();
+  }
 
   const description = (value: VatRate) =>
     value === 0 ? "No tax is added to a sale." : "Standard rate, added on top.";
@@ -76,6 +111,106 @@
   <PageHeader eyebrow="Workspace" title="Settings">
     <p>How this register charges tax on a sale.</p>
   </PageHeader>
+
+  <Card class="mt-4">
+    <div class="flex items-start gap-3">
+      <span
+        class="flex size-9 shrink-0 items-center justify-center rounded-md bg-canvas-sunken text-ink ring-1 ring-hairline ring-inset"
+      >
+        {#if isMain}
+          <Store class="size-4" />
+        {:else}
+          <MonitorSmartphone class="size-4" />
+        {/if}
+      </span>
+      <div class="min-w-0 flex-1">
+        <h2 class="text-heading-sm text-ink">
+          {connection.config?.tillName ?? "This till"}
+        </h2>
+        <p class="mt-0.5 text-caption text-ink-mute">
+          {isMain ? "Main till" : "Client till"} · code
+          <span class="font-mono text-ink-secondary"
+            >{connection.config?.tillCode ?? "—"}</span
+          >
+        </p>
+      </div>
+      <span class="inline-flex items-center gap-1.5 text-caption text-ink-mute">
+        <span
+          class={cn(
+            "size-1.5 rounded-full",
+            connection.online ? "bg-success" : "bg-danger",
+          )}
+          aria-hidden="true"
+        ></span>
+        {connection.online ? (isMain ? "Serving" : "Connected") : "Offline"}
+      </span>
+    </div>
+
+    <dl class="mt-4 grid gap-3 border-t border-hairline pt-4 sm:grid-cols-2">
+      <div>
+        <dt class="eyebrow text-ink-faint">
+          {isMain ? "Address for client tills" : "Main till address"}
+        </dt>
+        <dd class="mt-1 flex items-center gap-2">
+          <code class="min-w-0 flex-1 truncate font-mono text-body-md text-ink">
+            {address || (isMain ? "No network address found" : "Not set")}
+          </code>
+          <button
+            type="button"
+            class="inline-flex size-8 shrink-0 items-center justify-center rounded-sm text-ink-mute transition-colors hover:bg-canvas-sunken hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-40"
+            aria-label="Copy main till address"
+            title="Copy address"
+            disabled={!address}
+            onclick={() => copy(address, "address")}
+          >
+            {#if copied === "address"}
+              <Check class="size-4 text-success" />
+            {:else}
+              <Copy class="size-4" />
+            {/if}
+          </button>
+        </dd>
+      </div>
+
+      <div>
+        <dt class="eyebrow text-ink-faint">Till token</dt>
+        <dd class="mt-1 flex items-center gap-2">
+          <code class="min-w-0 flex-1 truncate font-mono text-body-md text-ink">
+            {token}
+          </code>
+          <button
+            type="button"
+            class="inline-flex size-8 shrink-0 items-center justify-center rounded-sm text-ink-mute transition-colors hover:bg-canvas-sunken hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            aria-label="Copy till token"
+            title="Copy token"
+            onclick={() => copy(token, "token")}
+          >
+            {#if copied === "token"}
+              <Check class="size-4 text-success" />
+            {:else}
+              <Copy class="size-4" />
+            {/if}
+          </button>
+        </dd>
+      </div>
+    </dl>
+
+    <div
+      class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-hairline pt-3"
+    >
+      <p class="text-caption text-ink-mute">
+        Changing the role or address closes this till and starts first run
+        again. Client tills need the new address and token.
+      </p>
+      <Button
+        variant="secondary"
+        size="sm"
+        onclick={() => (confirmSetup = true)}
+      >
+        Change setup
+      </Button>
+    </div>
+  </Card>
 
   <Card class="mt-4">
     <div class="flex items-start justify-between gap-4">
@@ -158,3 +293,23 @@
     {/if}
   </Card>
 </div>
+
+<Dialog
+  bind:open={confirmSetup}
+  title="Change this till's setup?"
+  description="The app closes the connection and returns to first run. Products and orders stay on the main till. If this is the main till, every client must re-enter its new address and token."
+>
+  <div class="flex justify-end gap-2 border-t border-hairline pt-4">
+    <Button
+      variant="secondary"
+      type="button"
+      onclick={() => (confirmSetup = false)}
+      disabled={changing}
+    >
+      Cancel
+    </Button>
+    <Button variant="danger" type="button" onclick={changeSetup} disabled={changing}>
+      {changing ? "Changing…" : "Change setup"}
+    </Button>
+  </div>
+</Dialog>

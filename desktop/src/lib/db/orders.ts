@@ -1,4 +1,5 @@
-import { and, desc, eq, gte, inArray, like, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, like, or, sql } from "drizzle-orm";
+import { orderNoPrefix, sequenceAfter } from "$lib/order-number";
 import { settle, type PaymentMethod } from "$lib/payment";
 import type { CartLine } from "$lib/stores/cart.svelte";
 import type { VatRate } from "$lib/utils";
@@ -12,6 +13,10 @@ export type OrderStatus = "completed" | "void";
 export type CheckoutInput = {
   lines: CartLine[];
   vatRate: VatRate;
+  /** The till that rang the sale, copied onto the order. */
+  tillName: string;
+  /** Short till marker used in the order number. */
+  tillCode: string;
   paymentMethod?: PaymentMethod;
   /** What the customer handed over. Defaults to the exact total. */
   tendered?: number;
@@ -31,16 +36,8 @@ export type CheckoutResult = {
   change: number;
 };
 
-function dayStamp(date = new Date()): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}${month}${day}`;
-}
-
-/** `POS-YYYYMMDD-0001`, sequential within the local day. */
-async function nextOrderNo(): Promise<string> {
-  const prefix = `POS-${dayStamp()}-`;
+async function nextOrderNo(tillCode: string): Promise<string> {
+  const prefix = orderNoPrefix(tillCode);
   const last = await db
     .select({ orderNo: orders.orderNo })
     .from(orders)
@@ -49,8 +46,7 @@ async function nextOrderNo(): Promise<string> {
     .limit(1)
     .get();
 
-  const sequence = last ? Number(last.orderNo.slice(prefix.length)) + 1 : 1;
-  return `${prefix}${String(sequence).padStart(4, "0")}`;
+  return `${prefix}${String(sequenceAfter(last?.orderNo, prefix)).padStart(4, "0")}`;
 }
 
 /**
@@ -63,13 +59,16 @@ async function nextOrderNo(): Promise<string> {
 export async function createOrder({
   lines,
   vatRate,
+  tillName,
+  tillCode,
   paymentMethod = "cash",
   tendered,
 }: CheckoutInput): Promise<CheckoutResult> {
   if (!lines.length) throw new Error("Cannot charge an empty cart.");
+  if (!tillName.trim()) throw new Error("This till has no name. Set it up again.");
 
   const id = crypto.randomUUID();
-  const orderNo = await nextOrderNo();
+  const orderNo = await nextOrderNo(tillCode);
   const subtotal = lines.reduce(
     (sum, line) => sum + line.unitPrice * line.qty,
     0,
@@ -86,6 +85,7 @@ export async function createOrder({
       db.insert(orders).values({
         id,
         orderNo,
+        tillName: tillName.trim(),
         subtotal,
         taxRate: vatRate,
         tax,
@@ -130,7 +130,7 @@ export type OrderSummary = Order & {
 };
 
 export type OrderFilter = {
-  /** Matches the order number, e.g. `POS-20261022`. */
+  /** Matches the order number or till name. */
   search?: string;
   status?: OrderStatus | "all";
   limit?: number;
@@ -150,7 +150,12 @@ export async function listOrders({
   const term = search.trim();
   const conditions = [
     status === "all" ? undefined : eq(orders.status, status),
-    term ? like(orders.orderNo, `%${term}%`) : undefined,
+    term
+      ? or(
+          like(orders.orderNo, `%${term}%`),
+          like(orders.tillName, `%${term}%`),
+        )
+      : undefined,
   ];
 
   const rows = await db
@@ -233,6 +238,17 @@ export type CashSummary = {
   sales: number;
 };
 
+export type CashSummaryFilter = {
+  now?: Date;
+  /** Count only this till's drawer. Omit for every till. */
+  tillName?: string;
+  /**
+   * Include orders from before tills were recorded. Only the main till should
+   * set this: those sales were rung up on it.
+   */
+  includeUnassigned?: boolean;
+};
+
 /**
  * The cash the drawer should hold: everything that was handed in, less every
  * change that went back out, across today's completed cash sales.
@@ -240,7 +256,11 @@ export type CashSummary = {
  * `created_at` is UTC epoch milliseconds, so the day boundary is the local
  * midnight rather than a UTC one — the till counts the shift, not the clock.
  */
-export async function getCashSummary(now = new Date()): Promise<CashSummary> {
+export async function getCashSummary({
+  now = new Date(),
+  tillName,
+  includeUnassigned = false,
+}: CashSummaryFilter = {}): Promise<CashSummary> {
   const startOfDay = new Date(
     now.getFullYear(),
     now.getMonth(),
@@ -258,6 +278,11 @@ export async function getCashSummary(now = new Date()): Promise<CashSummary> {
         eq(orders.status, "completed"),
         eq(orders.paymentMethod, "cash"),
         gte(orders.createdAt, startOfDay),
+        tillName
+          ? includeUnassigned
+            ? or(eq(orders.tillName, tillName), isNull(orders.tillName))
+            : eq(orders.tillName, tillName)
+          : undefined,
       ),
     )
     .get();

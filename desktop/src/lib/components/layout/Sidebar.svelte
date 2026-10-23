@@ -2,12 +2,18 @@
   import { X } from "@lucide/svelte";
   import { page } from "$app/state";
   import { navItems } from "$lib/navigation";
+  import { connection } from "$lib/stores/connection.svelte";
   import { cn } from "$lib/utils";
 
   let {
     mobileOpen = false,
     onclose,
   }: { mobileOpen?: boolean; onclose: () => void } = $props();
+
+  const tillCode = $derived(connection.config?.tillCode ?? "—");
+  const stateLabel = $derived(
+    connection.isMain ? "Main" : connection.online ? "Open" : "Offline",
+  );
 
   function isActive(href: string) {
     const path = page.url.pathname;
@@ -90,12 +96,20 @@
   <div class="border-t border-chrome-line p-2">
     <div
       class="flex flex-col items-center rounded-sm bg-chrome-raised py-1.5 leading-tight"
-      title="Till 01 — open"
+      title={`${connection.config?.tillName ?? "This till"} — ${stateLabel.toLowerCase()}`}
     >
-      <span class="tnum whitespace-nowrap text-caption text-chrome-ink">Till 01</span>
+      <span class="tnum whitespace-nowrap text-caption text-chrome-ink"
+        >Till {tillCode}</span
+      >
       <span class="mt-0.5 inline-flex items-center gap-1 text-micro-cap text-chrome-mute">
-        <span class="size-1 rounded-full bg-success-chrome" aria-hidden="true"></span>
-        Open
+        <span
+          class={cn(
+            "size-1 rounded-full",
+            connection.online ? "bg-success-chrome" : "bg-danger-chrome",
+          )}
+          aria-hidden="true"
+        ></span>
+        {stateLabel}
       </span>
     </div>
   </div>

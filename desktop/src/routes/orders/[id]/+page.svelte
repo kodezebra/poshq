@@ -143,6 +143,9 @@
     >
       <p>
         {formatDateTime(order.createdAt)}
+        {#if order.tillName}
+          <span class="text-ink-mute">· {order.tillName}</span>
+        {/if}
       </p>
 
       {#snippet actions()}
@@ -201,7 +204,11 @@
       </div>
 
       <Card class="self-start lg:sticky lg:top-14">
-        <p class="text-caption text-ink-mute">Summary</p>
+        <p class="text-caption text-ink-mute">
+          Summary{#if order.tillName}<span class="text-ink-faint">
+              · {order.tillName}</span
+            >{/if}
+        </p>
         <div class="mt-2">
           <OrderTotals
             subtotal={order.subtotal}

@@ -1,5 +1,7 @@
 <script lang="ts">
   import { Menu } from "@lucide/svelte";
+  import { connection } from "$lib/stores/connection.svelte";
+  import { cn } from "$lib/utils";
   import Brand from "./Brand.svelte";
   import UserMenu from "./UserMenu.svelte";
 
@@ -7,6 +9,14 @@
     mobileOpen = false,
     ontoggle,
   }: { mobileOpen?: boolean; ontoggle: () => void } = $props();
+
+  const stateLabel = $derived(
+    connection.isMain
+      ? "Main till"
+      : connection.online
+        ? "Connected"
+        : "Offline",
+  );
 </script>
 
 <!--
@@ -30,6 +40,25 @@
     <Brand />
 
     <div class="ms-auto flex items-center gap-3">
+      {#if connection.config}
+        <span
+          class="hidden items-center gap-1.5 sm:inline-flex"
+          title={connection.url}
+        >
+          <span
+            class={cn(
+              "size-1.5 rounded-full",
+              connection.online ? "bg-success-chrome" : "bg-danger-chrome",
+            )}
+            aria-hidden="true"
+          ></span>
+          <span class="text-caption text-chrome-mute">{stateLabel}</span>
+        </span>
+        <span
+          class="hidden h-5 w-px bg-chrome-line sm:block"
+          aria-hidden="true"
+        ></span>
+      {/if}
       <UserMenu />
     </div>
   </div>

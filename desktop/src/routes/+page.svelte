@@ -12,6 +12,7 @@
   import { getVatRate } from "$lib/db/settings";
   import type { PaymentMethod } from "$lib/payment";
   import { cart } from "$lib/stores/cart.svelte";
+  import { connection } from "$lib/stores/connection.svelte";
   import { cn, errorMessage, formatUGX } from "$lib/utils";
 
   const SEARCH_ID = "terminal-search";
@@ -29,10 +30,16 @@
 
   const focusSearch = () => document.getElementById(SEARCH_ID)?.focus();
 
-  /** What the drawer should hold for the day so far. */
+  /** What this till's drawer should hold for the day so far. */
   async function refreshTill() {
+    const tillName = connection.config?.tillName;
+    if (!tillName) return;
+
     try {
-      till = await getCashSummary();
+      till = await getCashSummary({
+        tillName,
+        includeUnassigned: connection.isMain,
+      });
     } catch (cause) {
       console.error("load till", cause);
     }
@@ -112,12 +119,30 @@
     tendered: number;
   }) {
     if (cart.isEmpty || charging) return;
+
+    const config = connection.config;
+    if (!config) {
+      toast.error("This till is not set up", {
+        description: "Choose main till or client till, then try again.",
+      });
+      return;
+    }
+
+    if (config.role === "client" && !connection.online) {
+      toast.error("Main till unreachable", {
+        description: "Sales are paused until this till reconnects.",
+      });
+      return;
+    }
+
     charging = true;
 
     try {
       const order = await createOrder({
         lines: [...cart.lines],
         vatRate: cart.vatRate,
+        tillName: config.tillName,
+        tillCode: config.tillCode,
         paymentMethod: payment.method,
         tendered: payment.tendered,
       });
@@ -200,10 +225,12 @@
 
       <div
         class="ml-auto flex shrink-0 items-center gap-1.5 rounded-sm border border-hairline px-2 py-1"
-        title="Cash in the drawer today"
+        title="Cash in this till today"
       >
         <Wallet class="size-3.5 text-ink-mute" />
-        <span class="text-caption text-ink-secondary">Till</span>
+        <span class="text-caption text-ink-secondary"
+          >Till {connection.config?.tillCode ?? "—"}</span
+        >
         <span class="tnum text-button-sm text-ink">{formatUGX(till.inDrawer)}</span>
       </div>
 

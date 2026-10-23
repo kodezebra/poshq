@@ -1,5 +1,5 @@
 use rusqlite::Connection;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Manager};
 
 /// One embedded SQL file per `user_version`. Adding a migration means running
@@ -7,12 +7,13 @@ use tauri::{AppHandle, Manager};
 const MIGRATIONS: &[&str] = &[
     include_str!("../migrations/0000_init.sql"),
     include_str!("../migrations/0001_cash_handling.sql"),
+    include_str!("../migrations/0002_till_identity.sql"),
 ];
 
 const STATEMENT_BREAKPOINT: &str = "--> statement-breakpoint";
 
-/// SQLite connection shared by every Tauri command.
-pub struct Db(pub Mutex<Connection>);
+/// SQLite connection shared by the Tauri commands and the LAN API.
+pub struct Db(pub Arc<Mutex<Connection>>);
 
 pub fn init(app: &AppHandle) -> Result<Db, String> {
     let dir = app
@@ -37,7 +38,7 @@ pub fn init(app: &AppHandle) -> Result<Db, String> {
     migrate(&mut conn)?;
     seed(&conn)?;
 
-    Ok(Db(Mutex::new(conn)))
+    Ok(Db(Arc::new(Mutex::new(conn))))
 }
 
 pub(crate) fn migrate(conn: &mut Connection) -> Result<(), String> {
@@ -62,9 +63,8 @@ fn migrate_from(conn: &mut Connection, migrations: &[&str]) -> Result<(), String
             if statement.trim().is_empty() {
                 continue;
             }
-            tx.execute_batch(statement).map_err(|error| {
-                format!("migration {version} failed on `{statement}`: {error}")
-            })?;
+            tx.execute_batch(statement)
+                .map_err(|error| format!("migration {version} failed on `{statement}`: {error}"))?;
         }
 
         tx.pragma_update(None, "user_version", version)
@@ -182,9 +182,11 @@ mod tests {
         assert_eq!(products, 4);
 
         let vat: String = conn
-            .query_row("SELECT value FROM settings WHERE key = 'vat_rate'", [], |row| {
-                row.get(0)
-            })
+            .query_row(
+                "SELECT value FROM settings WHERE key = 'vat_rate'",
+                [],
+                |row| row.get(0),
+            )
             .expect("read vat");
         assert_eq!(vat, "18");
     }
