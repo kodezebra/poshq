@@ -211,8 +211,8 @@ till from taking money.
 
 1. Tokens, fonts, chrome frame, control geometry. **Done.**
 2. The till: hero total, single filled action, payment pad. **Done.**
-3. Data surfaces: the orders table is sticky, sortable and right-aligned.
-   **Done.** Other data surfaces are audited one at a time.
+3. Data surfaces: the orders and catalog tables are sticky, sortable and
+   right-aligned. **Done.** Other data surfaces are audited one at a time.
 4. Status strip and receipts (80mm thermal and A4). **Pending.**
 5. Remaining screens audited one at a time; `DESIGN-stripe.md` deleted when
    nothing references it.

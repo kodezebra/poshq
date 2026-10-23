@@ -15,6 +15,8 @@
   import Input from "$lib/components/input/Input.svelte";
   import ProductCard from "$lib/components/product-card/ProductCard.svelte";
   import ProductForm from "$lib/components/product-form/ProductForm.svelte";
+  import Table from "$lib/components/table/Table.svelte";
+  import type { TableColumn, TableSort } from "$lib/components/table/types";
   import Dialog from "$lib/components/ui/Dialog.svelte";
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
   import PageHeader from "$lib/components/ui/PageHeader.svelte";
@@ -25,8 +27,16 @@
     updateProduct,
   } from "$lib/db/products";
   import type { Product, ProductInput } from "$lib/db/schema";
+  import { sortProducts } from "$lib/product-sort";
   import { cart } from "$lib/stores/cart.svelte";
   import { cn, errorMessage, formatUGX } from "$lib/utils";
+
+  const COLUMNS: TableColumn[] = [
+    { label: "Product", sortKey: "name" },
+    { label: "Category", sortKey: "category" },
+    { label: "Price", align: "end", sortKey: "price" },
+    { label: "Actions", align: "end" },
+  ];
 
   let search = $state("");
   let query = $state("");
@@ -35,6 +45,7 @@
   let loading = $state(true);
   let error = $state<string | null>(null);
   let layout = $state<"list" | "grid">("list");
+  let sort = $state<TableSort>({ key: "name", direction: "asc" });
 
   let formOpen = $state(false);
   let editing = $state<Product | null>(null);
@@ -47,6 +58,23 @@
   const categories = $derived(
     [...new Set(products.map((product) => product.category))].sort(),
   );
+
+  /** The view is fully loaded, so ordering is a local concern. */
+  const sorted = $derived(sortProducts(products, sort));
+
+  /**
+   * Re-clicking a column reverses it; a new column opens on the direction that
+   * answers the usual question. Prices are asked for largest first, names and
+   * categories ascend.
+   */
+  function toggleSort(key: string) {
+    if (sort?.key === key) {
+      sort = { key, direction: sort.direction === "desc" ? "asc" : "desc" };
+      return;
+    }
+    const descending = key === "price";
+    sort = { key, direction: descending ? "desc" : "asc" };
+  }
 
   // Debounce typing so each keystroke doesn't hit SQLite.
   $effect(() => {
@@ -171,7 +199,7 @@
       </div>
 
       <div
-        class="flex shrink-0 items-center gap-0.5 rounded-md border border-hairline p-0.5"
+        class="flex shrink-0 items-center gap-1"
         role="group"
         aria-label="Catalog layout"
       >
@@ -182,11 +210,11 @@
           title="List view"
           onclick={() => (layout = "list")}
           class={cn(
-            "inline-flex size-8 items-center justify-center rounded-sm transition-colors",
+            "inline-flex size-9 items-center justify-center rounded-sm transition-colors",
             "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
             layout === "list"
-              ? "bg-canvas-soft text-ink"
-              : "text-ink-mute hover:text-ink",
+              ? "bg-primary-subdued text-primary-deep"
+              : "text-ink-mute hover:bg-canvas-sunken hover:text-ink",
           )}
         >
           <LayoutList class="size-4" />
@@ -198,18 +226,18 @@
           title="Grid view"
           onclick={() => (layout = "grid")}
           class={cn(
-            "inline-flex size-8 items-center justify-center rounded-sm transition-colors",
+            "inline-flex size-9 items-center justify-center rounded-sm transition-colors",
             "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
             layout === "grid"
-              ? "bg-canvas-soft text-ink"
-              : "text-ink-mute hover:text-ink",
+              ? "bg-primary-subdued text-primary-deep"
+              : "text-ink-mute hover:bg-canvas-sunken hover:text-ink",
           )}
         >
           <LayoutGrid class="size-4" />
         </button>
       </div>
 
-      <Button size="sm" onclick={openCreate}>
+      <Button onclick={openCreate}>
         <Plus class="size-4" />
         Add product
       </Button>
@@ -239,62 +267,65 @@
     ></div>
   {:else if products.length}
     {#if layout === "list"}
-      <ul
-        class="mt-4 divide-y divide-hairline overflow-hidden rounded-lg border border-hairline bg-canvas"
-      >
-        {#each products as product (product.id)}
-          <li
-            class="group relative flex items-center gap-4 px-3 py-2 transition-colors hover:bg-canvas-soft focus-within:-outline-offset-2 focus-within:outline-2 focus-within:outline-primary"
-          >
-            <button
-              type="button"
-              onclick={() => openEdit(product)}
-              class="min-w-0 flex-1 text-left after:absolute after:inset-0 focus-visible:outline-none"
-              aria-label={`Edit ${product.name}`}
-            >
-              <span class="block truncate text-body-md text-ink">
+      <Table class="mt-4" columns={COLUMNS} {sort} onsort={toggleSort}>
+        {#each sorted as product (product.id)}
+          <tr class="relative transition-colors hover:bg-canvas-soft">
+            <td class="px-3 py-2">
+              <button
+                type="button"
+                onclick={() => openEdit(product)}
+                class="block max-w-80 truncate text-left after:absolute after:inset-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                aria-label={`Edit ${product.name}`}
+              >
                 {product.name}
-              </span>
-            </button>
+              </button>
+            </td>
 
-            <span
-              class="hidden w-48 shrink-0 truncate text-caption text-ink-mute sm:block"
+            <td class="px-3 py-2 text-ink-mute">
+              <div class="max-w-56 truncate">
+                {product.category}{#if product.sku}<span
+                    class="code text-caption text-ink-faint"
+                  > · {product.sku}</span
+                  >{/if}
+              </div>
+            </td>
+
+            <td
+              class="tnum whitespace-nowrap px-3 py-2 text-end font-medium text-ink"
             >
-              {product.category}{#if product.sku} · {product.sku}{/if}
-            </span>
-
-            <span class="tnum w-24 shrink-0 text-right text-body-md text-ink">
               {formatUGX(product.price)}
-            </span>
+            </td>
 
-            <div class="relative z-10">
-              <ActionMenu
-                label={`Actions for ${product.name}`}
-                items={[
-                  {
-                    label: "Edit product",
-                    icon: Settings2,
-                    onselect: () => openEdit(product),
-                  },
-                  {
-                    label: "Delete product",
-                    icon: Trash2,
-                    destructive: true,
-                    onselect: () => askDelete(product),
-                  },
-                ]}
-              />
-            </div>
-          </li>
+            <td class="w-12 px-3 py-2">
+              <div class="relative z-10 flex justify-end">
+                <ActionMenu
+                  label={`Actions for ${product.name}`}
+                  items={[
+                    {
+                      label: "Edit product",
+                      icon: Settings2,
+                      onselect: () => openEdit(product),
+                    },
+                    {
+                      label: "Delete product",
+                      icon: Trash2,
+                      destructive: true,
+                      onselect: () => askDelete(product),
+                    },
+                  ]}
+                />
+              </div>
+            </td>
+          </tr>
         {/each}
-      </ul>
+      </Table>
     {:else}
       <ul
         class="mt-4 grid items-start gap-3 [grid-template-columns:repeat(auto-fill,minmax(15rem,1fr))]"
       >
-        {#each products as product (product.id)}
+        {#each sorted as product (product.id)}
           <li>
-            <ProductCard {product}>
+            <ProductCard {product} onedit={() => openEdit(product)}>
               {#snippet actions()}
                 <ActionMenu
                   label={`Actions for ${product.name}`}

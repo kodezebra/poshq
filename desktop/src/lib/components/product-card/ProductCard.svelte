@@ -7,22 +7,38 @@
   let {
     product,
     actions,
+    onedit,
     class: className,
-  }: { product: Product; actions?: Snippet; class?: string } = $props();
+  }: {
+    product: Product;
+    actions?: Snippet;
+    /** Makes the whole card an edit target, matching a table row. */
+    onedit?: () => void;
+    class?: string;
+  } = $props();
 </script>
 
 <article
   class={cn(
-    "group flex flex-col overflow-hidden rounded-lg border border-hairline bg-canvas transition-shadow hover:shadow-elev-2",
+    "group relative flex flex-col overflow-hidden rounded-lg border border-hairline bg-canvas transition-colors hover:border-hairline-input",
     className,
   )}
 >
+  {#if onedit}
+    <button
+      type="button"
+      onclick={onedit}
+      aria-label={`Edit ${product.name}`}
+      class="absolute inset-0 z-0 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+    ></button>
+  {/if}
+
   <div class="flex h-20 w-full items-center justify-center overflow-hidden bg-canvas-soft">
     {#if product.imageUrl}
       <img
         src={product.imageUrl}
         alt={product.name}
-        class="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+        class="size-full object-cover"
       />
     {:else}
       <span class="text-body-lg text-ink-faint" aria-hidden="true">
@@ -45,7 +61,9 @@
   </div>
 
   {#if actions}
-    <div class="flex items-center justify-end border-t border-hairline px-2 py-1">
+    <div
+      class="relative z-10 flex items-center justify-end border-t border-hairline px-2 py-1"
+    >
       {@render actions()}
     </div>
   {/if}
