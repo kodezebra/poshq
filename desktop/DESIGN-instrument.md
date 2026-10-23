@@ -180,7 +180,8 @@ These are the pieces that make the product recognisable. Keep them consistent.
 | `Table`              | Sticky header, sortable columns, right-aligned numerics      |
 | `OrderTotals`        | Compact breakdown with a `display-lg` total                  |
 | `PaymentPad`         | Amount due header, tender method, change readout, 44px commit |
-| `Card`, `Dialog`, `Input`, `Select`, `EmptyState`, `PageHeader` | Inherit the tokens; not yet audited one by one |
+| `Card`, `PageHeader`  | Flat bordered surfaces; a title may carry `code`             |
+| `Dialog`, `Input`, `Select`, `EmptyState` | Inherit the tokens; not yet audited one by one |
 
 Not yet built: status strip, receipt templates, offline banner.
 
@@ -214,8 +215,7 @@ till from taking money.
 3. Data surfaces: the orders and catalog tables are sticky, sortable and
    right-aligned. **Done.** Other data surfaces are audited one at a time.
 4. Status strip and receipts (80mm thermal and A4). **Pending.**
-5. Remaining screens audited one at a time; `DESIGN-stripe.md` deleted when
-   nothing references it.
+5. Remaining screens: settings and order detail audited. **Done.**
 
 ## Known gaps
 
