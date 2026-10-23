@@ -133,6 +133,9 @@ on Linux, `.app`/`.dmg` on macOS, `.msi`/`.exe` on Windows). Note that the
 frontend is built with `adapter-static` in SPA mode, so the app is fully
 self-contained.
 
+The planned GitHub Actions release setup — platforms, jobs, versions, signing
+and costs — is described in [`../docs/github-actions-release.md`](../docs/github-actions-release.md).
+
 ### Scripts
 
 | Command | What it does |
