@@ -31,7 +31,6 @@
     { label: "Line total", align: "end" },
   ];
 
-
   let record = $state<OrderWithItems | undefined>(undefined);
   let loading = $state(true);
   let error = $state<string | null>(null);
@@ -139,6 +138,7 @@
     <PageHeader
       eyebrow="Order"
       title={order.orderNo}
+      titleClass="code"
       back={{ href: "/orders", label: "All orders" }}
     >
       <p>
@@ -193,7 +193,7 @@
         </Table>
 
         {#if order.status === "void"}
-          <p class="mt-3 text-caption text-ruby">
+          <p class="mt-3 text-caption text-danger">
             Voided {order.voidedAt ? formatDateTime(order.voidedAt) : ""} — the
             order is kept for the record but excluded from sales.
           </p>
