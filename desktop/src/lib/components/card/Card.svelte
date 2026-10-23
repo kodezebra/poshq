@@ -22,7 +22,7 @@
 
 <div
   class={cn(
-    "rounded-lg border border-hairline bg-canvas shadow-elev-1",
+    "rounded-lg border border-hairline bg-canvas",
     paddingClass[padding],
     className,
   )}
