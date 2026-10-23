@@ -6,6 +6,7 @@
   let {
     eyebrow,
     title,
+    titleClass,
     back,
     actions,
     class: className,
@@ -13,6 +14,8 @@
   }: {
     eyebrow?: string;
     title: string;
+    /** Extra classes for the title, e.g. `code` for an identifier. */
+    titleClass?: string;
     /** Optional back link, rendered as an icon button before the title. */
     back?: { href: string; label: string };
     actions?: Snippet;
@@ -39,7 +42,7 @@
       <p class="eyebrow text-ink-mute">{eyebrow}</p>
     {/if}
 
-    <h1 class="text-heading-lg text-ink">{title}</h1>
+    <h1 class={cn("text-heading-lg text-ink", titleClass)}>{title}</h1>
 
     {#if children}
       <div class="text-caption text-ink-mute">
