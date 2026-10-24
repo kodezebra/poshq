@@ -368,15 +368,15 @@ for it and falls back to a typed address.
 
 ---
 
-## A2 — Offline selling (deferred)
+## A2 — Offline selling (design next)
 
-Deferred until M11 and the release pipeline are done. The A1 rule stays in
-force until then: clients block charging when the main till is unreachable.
+M11 and the release pipeline are done. The A1 rule stays in force until A2
+ships: clients block charging when the main till is unreachable.
 
 A2 is not a small switch. It needs a client-side queue with a stable order
 identity, a replay path that cannot double-charge, and a decision about how long
-a client may trade alone. Design it separately; do not start it before the LAN
-path is stable and shipped.
+a client may trade alone. Design it separately; the LAN path is now stable, so
+that design can start.
 
 ---
 
@@ -395,6 +395,7 @@ path is stable and shipped.
 | M9 | Every text and control pair meets WCAG AA on its own surface; one filled action per surface; the till's total is the largest figure at 1366×768; tables sort with `aria-sort` and keep their header; smoke stays green |
 | M10 | Two computers share one catalog and one order history over the LAN; each sale records its till; no two tills can generate the same order number; clients stop cleanly when the main till is unavailable |
 | M11 | A client finds the main till over mDNS without typing an IP; the token is still required; blocked mDNS leaves manual entry working |
+| Release | `main` CI is green; a manual run and the `v0.1.0` tag build Linux and Windows; the draft has all five installers |
 
 ## Out of scope for v1
 
@@ -403,4 +404,6 @@ sync, offline selling, per-product VAT classes, i18n.
 
 ## Rollback
 
-`breaking/pos-v1` is isolated. `main` stays shippable at `2ee008d`; revert a milestone by reverting its commit(s). No remote configured yet, so nothing is published.
+`breaking/pos-v1` is isolated. `main` is published at
+`github.com/kodezebra/poshq`; `v0.1.0` is a draft release. Revert a milestone by
+reverting its commit(s) and pushing.
