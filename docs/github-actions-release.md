@@ -1,7 +1,8 @@
 # Releasing Posh with GitHub Actions
 
 Status: **implemented** in `.github/workflows/ci.yml` and
-`.github/workflows/release.yml`. This note records the setup we agreed on.
+`.github/workflows/release.yml`, and exercised with a manual run and the
+`v0.1.0` tag. This note records the setup we agreed on.
 
 ## Goal
 
@@ -122,7 +123,7 @@ Secrets belong in GitHub repository settings, never in the repo.
 
 - [x] Add `.github/workflows/ci.yml` for push/PR checks.
 - [x] Add `.github/workflows/release.yml` for tags and manual dispatch.
-- [ ] Create the GitHub repository and push `main`.
-- [ ] Tag `v0.1.0` and verify the draft release.
+- [x] Create the GitHub repository and push `main`.
+- [x] Tag `v0.1.0` and verify the draft release.
 - [ ] Install the artifacts on a Fedora and a Windows machine.
 - [ ] Document the install and SmartScreen steps in `desktop/README.md`.
