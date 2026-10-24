@@ -6,8 +6,9 @@ charge the sale, and keep a history of every order — with the ability to void
 or delete one.
 
 The tills run the same app. One **main till** owns the database and serves a
-small HTTP API over the shop's LAN. The other **client tills** send their sales
-to it. There is no internet, account or cloud service involved.
+small HTTP API over the shop's LAN. The other **client tills** find it on the
+network and send their sales to it. There is no internet, account or cloud
+service involved.
 
 ---
 
@@ -96,8 +97,9 @@ and a short code (for example `T1`).
    till**. The setup screen shows two values: the till's LAN address and a
    12-character token. Copy both.
 2. Connect each other computer to the same WiFi or LAN, start the app and
-   choose **Client till**. Enter the main till's address and token, then test
-   the connection.
+   choose **Client till**. The setup screen searches the network and lists the
+   main tills it finds; pick one, then enter the token. If nothing is found,
+   type the main till's address instead.
 3. Leave the main till open while the shop is trading. Client tills pause
    selling when they cannot reach it; A1 does not queue offline sales.
 
@@ -105,6 +107,14 @@ Both roles use the same desktop build and the same database schema. The main
 till binds port `47821` on every interface. If clients cannot connect, allow
 inbound TCP `47821` through the main computer's firewall and make sure the
 network is marked **private**, not public.
+
+Automatic discovery uses mDNS on UDP `5353` (`_posh._tcp.local.`). If the
+client's list stays empty, allow UDP `5353` on both computers' firewalls and
+check that the WiFi does not isolate clients from each other (guest networks
+often do). Typing the address always works as a fallback.
+
+The advertisement carries the till's name, code, address and version, never
+the token. A client still has to enter the token before it can connect.
 
 The role, address and token are in **Settings → This till**, where they can be
 copied or changed. Changing setup stops the LAN listener and returns the app to
@@ -236,12 +246,13 @@ src/
     db/             schema, client (invoke or LAN), queries and error wording
     stores/         the open cart and the live till connection
     connection.ts   role, address, token and health checks
+    discovery.ts    find main tills over mDNS
     utils.ts        money, tax, dates and error messages
   routes/           Terminal, Products, Orders, Order detail, Settings
 src-tauri/
   src/db.rs         connection, PRAGMAs, migrations, seed
   src/commands.rs   the db_query / db_batch bridge
-  src/server.rs     LAN API, token check and server lifecycle
+  src/server.rs     LAN API, token check, mDNS and server lifecycle
   migrations/       generated SQL, embedded at compile time
 scripts/
   real-app-smoke.py drives the built binary through the accessibility bus

@@ -19,6 +19,7 @@ pub fn run() {
             commands::db_batch,
             server::start_lan_server,
             server::stop_lan_server,
+            server::discover_tills,
             server::lan_info
         ])
         .run(tauri::generate_context!())

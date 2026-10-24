@@ -8,7 +8,9 @@
     Copy,
     LoaderCircle,
     MonitorSmartphone,
+    RefreshCw,
     Server,
+    Wifi,
   } from "@lucide/svelte";
   import Button from "$lib/components/button/Button.svelte";
   import Card from "$lib/components/card/Card.svelte";
@@ -24,6 +26,11 @@
     saveConnection,
     serverUrlFrom,
   } from "$lib/connection";
+  import {
+    discoverTills,
+    hasBridge,
+    type DiscoveredTill,
+  } from "$lib/discovery";
 
   type ServerInfo = {
     ip: string | null;
@@ -44,18 +51,21 @@
   let addressError = $state<string | null>(null);
   let lanInfo = $state<ServerInfo | null>(null);
   let copied = $state<string | null>(null);
+  let discovered = $state<DiscoveredTill[]>([]);
+  let discovering = $state(false);
+  let discoveryDone = $state(false);
+  let discoveryError = $state<string | null>(null);
+  let discoveryRun = 0;
 
-  const hasBridge =
-    typeof window !== "undefined" &&
-    typeof (
-      globalThis as { __TAURI_INTERNALS__?: { invoke?: unknown } }
-    ).__TAURI_INTERNALS__?.invoke === "function";
+  const bridge = hasBridge();
 
   const address = $derived(
     lanInfo?.ip ? serverUrlFrom(lanInfo.ip, lanInfo.port) : "",
   );
 
   function choose(role: "main" | "client") {
+    discoveryRun += 1;
+    discovering = false;
     step = role;
     error = null;
 
@@ -65,14 +75,29 @@
         tillCode = "T1";
       }
       void loadAddress();
-    } else if (tillName === "Main till" && tillCode === "T1") {
-      tillName = "Till 2";
-      tillCode = "T2";
+    } else {
+      discovered = [];
+      discoveryDone = false;
+      discoveryError = null;
+
+      if (tillName === "Main till" && tillCode === "T1") {
+        tillName = "Till 2";
+        tillCode = "T2";
+      }
+      void findTills();
     }
   }
 
+  function backToRole() {
+    // Any search still in flight must not fill this form after we leave.
+    discoveryRun += 1;
+    discovering = false;
+    step = "role";
+    error = null;
+  }
+
   async function loadAddress() {
-    if (!hasBridge) {
+    if (!bridge) {
       addressError =
         "Open this screen in the Posh desktop app to run the main till.";
       return;
@@ -88,6 +113,40 @@
     } finally {
       loadingAddress = false;
     }
+  }
+
+  async function findTills() {
+    if (!bridge) {
+      discoveryDone = true;
+      return;
+    }
+
+    const run = ++discoveryRun;
+    discovering = true;
+    discoveryError = null;
+
+    try {
+      const found = await discoverTills();
+      if (run !== discoveryRun) return;
+
+      discovered = found;
+      if (found.length === 1 && !addressInput.trim()) {
+        addressInput = serverUrlFrom(found[0].address, found[0].port);
+      }
+    } catch (cause) {
+      if (run !== discoveryRun) return;
+      discoveryError = errorMessage(cause);
+    } finally {
+      if (run === discoveryRun) {
+        discovering = false;
+        discoveryDone = true;
+      }
+    }
+  }
+
+  function pickTill(till: DiscoveredTill) {
+    addressInput = serverUrlFrom(till.address, till.port);
+    discoveryError = null;
   }
 
   async function copy(value: string, key: string) {
@@ -118,7 +177,7 @@
 
   async function startMain() {
     if (busy || !validateTill()) return;
-    if (!hasBridge) {
+    if (!bridge) {
       error = "The main till must run in the Posh desktop app.";
       return;
     }
@@ -130,6 +189,8 @@
       const info = await invoke<ServerInfo>("start_lan_server", {
         token: mainToken,
         port: DEFAULT_PORT,
+        tillName,
+        tillCode,
       });
 
       try {
@@ -254,8 +315,8 @@
             </span>
             <span class="mt-4 text-heading-sm text-ink">Client till</span>
             <span class="mt-1.5 text-body-md text-ink-mute">
-              Sends every sale to the main till. Needs the main till's address
-              and token, and must be on the same network.
+              Finds the main till on your network and sends every sale to it.
+              Needs the main till's token and the same network.
             </span>
             <span
               class="mt-auto inline-flex items-center gap-1.5 pt-5 text-button-sm text-primary"
@@ -278,10 +339,7 @@
         <button
           type="button"
           class="inline-flex items-center gap-1.5 rounded-sm text-button-sm text-ink-secondary transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          onclick={() => {
-            step = "role";
-            error = null;
-          }}
+          onclick={backToRole}
         >
           <ArrowLeft class="size-4" />
           Back
@@ -297,7 +355,7 @@
           {#if step === "main"}
             This computer will keep the database and serve the other tills.
           {:else}
-            Enter the address and token shown on the main till.
+            Find the main till on your network, then enter its token.
           {/if}
         </p>
 
@@ -336,10 +394,110 @@
 
           {#if step === "client"}
             <div class="mt-5 space-y-4 border-t border-hairline pt-5">
+              <div class="rounded-md border border-hairline bg-canvas-soft p-3">
+                <div class="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <p class="text-caption font-medium text-ink">
+                      Find the main till
+                    </p>
+                    <p class="mt-0.5 text-caption text-ink-mute">
+                      Search this network, or type its address below.
+                    </p>
+                  </div>
+                  {#if bridge}
+                    <button
+                      type="button"
+                      class="inline-flex items-center gap-1.5 rounded-sm px-2 py-1 text-button-sm text-primary transition-colors hover:bg-primary-subdued/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-40"
+                      disabled={discovering}
+                      onclick={findTills}
+                    >
+                      {#if discovering}
+                        <LoaderCircle class="size-3.5 animate-spin" />
+                        Searching…
+                      {:else}
+                        <RefreshCw class="size-3.5" />
+                        {discoveryDone ? "Search again" : "Search"}
+                      {/if}
+                    </button>
+                  {/if}
+                </div>
+
+                {#if !bridge}
+                  <p class="mt-3 text-caption text-ink-mute">
+                    Automatic search works in the Posh desktop app. Enter the
+                    address below.
+                  </p>
+                {:else if discovering && discovered.length === 0}
+                  <p
+                    class="mt-3 flex items-center gap-2 text-caption text-ink-mute"
+                  >
+                    <LoaderCircle class="size-3.5 animate-spin" />
+                    Looking for main tills on this network…
+                  </p>
+                {:else if discovered.length > 0}
+                  <ul class="mt-3 space-y-1.5">
+                    {#each discovered as till (till.id)}
+                      {@const selected =
+                        addressInput ===
+                        serverUrlFrom(till.address, till.port)}
+                      <li>
+                        <button
+                          type="button"
+                          class="flex w-full items-center gap-3 rounded-sm border px-2.5 py-2 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary {selected
+                            ? 'border-primary bg-primary-subdued/20'
+                            : 'border-transparent hover:border-hairline hover:bg-canvas'}"
+                          aria-pressed={selected}
+                          onclick={() => pickTill(till)}
+                        >
+                          <span
+                            class="flex size-8 shrink-0 items-center justify-center rounded-sm bg-canvas text-ink-secondary ring-1 ring-hairline ring-inset"
+                          >
+                            <Wifi class="size-4" />
+                          </span>
+                          <span class="min-w-0 flex-1">
+                            <span class="block truncate text-body-md text-ink">
+                              {till.name}
+                            </span>
+                            <span
+                              class="block truncate font-mono text-caption text-ink-mute"
+                            >
+                              {till.address}:{till.port}
+                            </span>
+                          </span>
+                          <span
+                            class="shrink-0 rounded-sm bg-canvas-sunken px-1.5 py-0.5 font-mono text-caption text-ink-secondary"
+                          >
+                            {till.code}
+                          </span>
+                          {#if selected}
+                            <Check class="size-4 shrink-0 text-success" />
+                          {/if}
+                        </button>
+                      </li>
+                    {/each}
+                  </ul>
+                {:else if discoveryDone && !discoveryError}
+                  <p class="mt-3 text-caption text-ink-mute">
+                    No main till answered. Check that it is open and on the same
+                    network, or type its address below.
+                  </p>
+                {/if}
+
+                {#if discoveryError}
+                  <p
+                    class="mt-3 flex items-start gap-2 text-caption text-ink-mute"
+                    role="alert"
+                  >
+                    <CircleAlert class="mt-0.5 size-3.5 shrink-0 text-danger" />
+                    Could not search automatically: {discoveryError}
+                  </p>
+                {/if}
+              </div>
+
               <Field
                 label="Main till address"
                 for="setup-address"
-                hint="For example 192.168.1.5:47821."
+                hint="Filled in when found, or type it, for example 192.168.1.5:47821."
               >
                 <Input
                   id="setup-address"
@@ -381,7 +539,8 @@
                 <div>
                   <p class="text-heading-sm text-ink">Share with the client tills</p>
                   <p class="mt-1 text-caption text-ink-mute">
-                    Type these two values into each client till's first run.
+                    Client tills on the same network can find this till
+                    automatically. If they cannot, type these two values.
                   </p>
                 </div>
                 {#if loadingAddress}
@@ -476,7 +635,7 @@
 
           <div class="mt-6 flex flex-wrap items-center gap-3">
             {#if step === "main"}
-              <Button onclick={startMain} disabled={busy || !hasBridge}>
+              <Button onclick={startMain} disabled={busy || !bridge}>
                 {#if busy}
                   <LoaderCircle class="size-4 animate-spin" />
                   Starting…
@@ -497,10 +656,7 @@
 
             <Button
               variant="ghost"
-              onclick={() => {
-                step = "role";
-                error = null;
-              }}
+              onclick={backToRole}
             >
               Change role
             </Button>

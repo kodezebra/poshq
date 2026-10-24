@@ -323,6 +323,63 @@ cloud hosting, receipts, and multi-site operation.
 
 ---
 
+## M11 — Find the main till automatically
+
+Client setup should not make a cashier type an IP address. The main till
+advertises itself with mDNS/DNS-SD on the shop network; client setup browses
+for it and falls back to a typed address.
+
+```
+[Main: HTTP API :47821 + _posh._tcp.local.]
+        │  mDNS, UDP 5353
+        └── [Client setup: "Front counter · 192.168.1.5:47821"]
+```
+
+- The main advertises `_posh._tcp.local.` after the HTTP server binds. The
+  advertisement is best-effort: if mDNS fails, the LAN server still runs.
+- Advertised TXT fields: `app=posh`, `name`, `code`, `version`. The token is
+  never advertised; the client still types it.
+- `discover_tills` is a Tauri command. It browses for a short window (2.5 s by
+  default, clamped to 0.5–5 s) and returns one preferred IPv4 per till:
+  `192.168.x` first, then `10.x`, then `172.16–31.x`. Loopback, link-local,
+  multicast and broadcast addresses are ignored.
+- Client setup shows **Find the main till** with **Search again**, a list of
+  results and a selected state. A single result fills the address; the manual
+  address field stays available.
+- The Rust side owns discovery; a plain browser gets an empty list and keeps
+  using the typed address. No new network service is exposed by clients.
+- mDNS needs UDP `5353` and a network that does not isolate clients (guest WiFi
+  often does). Document both.
+
+**Acceptance**
+
+- A client on the same LAN finds the running main till without typing an IP.
+- Selecting a result fills the address; the token is still required and a wrong
+  token is rejected.
+- If mDNS is blocked, discovery shows an empty or failed result and manual
+  entry still connects.
+- The advertisement contains no token; the main's HTTP server starts even when
+  the mDNS daemon cannot start.
+- `bun run check`, `bunx vitest run`, `cargo clippy`, `cargo test` pass.
+
+**Commit**
+
+1. `feat(discovery): find the main till on the shop network`
+
+---
+
+## A2 — Offline selling (deferred)
+
+Deferred until M11 and the release pipeline are done. The A1 rule stays in
+force until then: clients block charging when the main till is unreachable.
+
+A2 is not a small switch. It needs a client-side queue with a stable order
+identity, a replay path that cannot double-charge, and a decision about how long
+a client may trade alone. Design it separately; do not start it before the LAN
+path is stable and shipped.
+
+---
+
 ## Milestone gates
 
 | Gate | Pass condition |
@@ -337,6 +394,7 @@ cloud hosting, receipts, and multi-site operation.
 | M8 | The register fits a 1366×768 till without scrolling for the common case; cart, catalog and order rows stay readable; every control keeps a keyboard focus ring |
 | M9 | Every text and control pair meets WCAG AA on its own surface; one filled action per surface; the till's total is the largest figure at 1366×768; tables sort with `aria-sort` and keep their header; smoke stays green |
 | M10 | Two computers share one catalog and one order history over the LAN; each sale records its till; no two tills can generate the same order number; clients stop cleanly when the main till is unavailable |
+| M11 | A client finds the main till over mDNS without typing an IP; the token is still required; blocked mDNS leaves manual entry working |
 
 ## Out of scope for v1
 

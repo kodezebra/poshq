@@ -56,6 +56,8 @@ class ConnectionStore {
         this.serverInfo = await invoke<ServerInfo>("start_lan_server", {
           token: this.config.token,
           port: this.config.port,
+          tillName: this.config.tillName,
+          tillCode: this.config.tillCode,
         });
         this.online = true;
       } catch (error) {
