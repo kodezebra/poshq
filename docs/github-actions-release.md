@@ -1,7 +1,7 @@
 # Releasing Posh with GitHub Actions
 
-Status: **planned, not implemented.** This note records the setup we agreed on;
-the workflow files come later.
+Status: **implemented** in `.github/workflows/ci.yml` and
+`.github/workflows/release.yml`. This note records the setup we agreed on.
 
 ## Goal
 
@@ -50,13 +50,17 @@ reaches the shop.
    - `bun install`, then `tauri-action` with the default MSI/NSIS bundles.
    - Upload the installers as workflow artifacts and to the draft release.
 
-4. **release**
-   - `tauri-action` creates or updates the draft release for the tag.
+4. **Release (created by the build jobs)**
+   - Both build jobs pass the tag to `tauri-action`, which creates or updates
+     the draft release and uploads that platform's assets.
+   - A manual run builds and uploads workflow artifacts only; it does not create
+     a release.
    - Release notes start as a placeholder; edit them on GitHub before publishing.
    - `permissions: contents: write`; no personal access token needed.
 
 ## Repository assumptions
 
+- The public repository is `kodezebra/poshq`.
 - Workflow files live at `.github/workflows/`.
 - The app is in `desktop/`; `tauri-action` receives `projectPath: desktop`.
 - Bun is the package manager (lockfile committed). `Cargo.lock` stays committed.
@@ -109,7 +113,6 @@ Secrets belong in GitHub repository settings, never in the repo.
 
 ## Open questions
 
-- Public or private repository.
 - Whether to add macOS later (needs an Apple Developer account for clean installs).
 - Whether to add Windows signing.
 - Whether auto-update is wanted; it needs Tauri's updater plugin, a signing key,
@@ -117,8 +120,8 @@ Secrets belong in GitHub repository settings, never in the repo.
 
 ## Future work
 
-- [ ] Add `.github/workflows/ci.yml` for push/PR checks.
-- [ ] Add `.github/workflows/release.yml` for tags and manual dispatch.
+- [x] Add `.github/workflows/ci.yml` for push/PR checks.
+- [x] Add `.github/workflows/release.yml` for tags and manual dispatch.
 - [ ] Create the GitHub repository and push `main`.
 - [ ] Tag `v0.1.0` and verify the draft release.
 - [ ] Install the artifacts on a Fedora and a Windows machine.
