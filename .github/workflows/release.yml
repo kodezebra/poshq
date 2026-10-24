@@ -17,7 +17,7 @@ jobs:
     name: Verify version and checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install Tauri system packages
         run: |
@@ -91,7 +91,7 @@ jobs:
     needs: verify
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install Tauri system packages
         run: |
@@ -147,7 +147,7 @@ jobs:
           args: --bundles deb,rpm,appimage
 
       - name: Upload Linux bundles
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: posh-linux-${{ github.sha }}
           path: |
@@ -162,7 +162,7 @@ jobs:
     needs: verify
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
@@ -200,7 +200,7 @@ jobs:
           includeUpdaterJson: false
 
       - name: Upload Windows installers
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: posh-windows-${{ github.sha }}
           path: |
