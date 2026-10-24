@@ -368,15 +368,18 @@ for it and falls back to a typed address.
 
 ---
 
-## A2 — Offline selling (design next)
+## A2 — Offline selling (options proposed)
 
 M11 and the release pipeline are done. The A1 rule stays in force until A2
 ships: clients block charging when the main till is unreachable.
 
 A2 is not a small switch. It needs a client-side queue with a stable order
 identity, a replay path that cannot double-charge, and a decision about how long
-a client may trade alone. Design it separately; the LAN path is now stable, so
-that design can start.
+a client may trade alone.
+
+The options and a recommended shape are in
+[`docs/offline-selling.md`](../docs/offline-selling.md). No offline code starts
+until the durability and offline-window decisions are settled.
 
 ---
 
